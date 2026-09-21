@@ -217,13 +217,17 @@ export function LoginPage() {
                             <ShieldCheckIcon size={28} weight="duotone" aria-hidden="true" />
                         </Box>
                         <Box>
-                            <Typography component="p" color="primary" variant="overline">
+                            <Typography
+                                component="p"
+                                variant="overline"
+                                sx={(theme) => ({ color: theme.dmr.primary.default })}
+                            >
                                 VOLTDASH WEB
                             </Typography>
                             <Typography component="h1" variant="h3" sx={{ mt: 1 }}>
                                 Inteligencia financiera, acceso seguro.
                             </Typography>
-                            <Typography color="text.secondary" sx={{ mt: 2, maxWidth: 400 }}>
+                            <Typography sx={(theme) => ({ mt: 2, maxWidth: 400, color: theme.dmr.textos.secondary })}>
                                 Vista de demostración autocontenida: las credenciales se validan
                                 en el navegador, sin necesidad de un servidor.
                             </Typography>
@@ -282,7 +286,7 @@ export function LoginPage() {
                         <Typography component="h2" variant="h4">
                             Inicia sesión
                         </Typography>
-                        <Typography color="text.secondary" sx={{ mt: 1 }}>
+                        <Typography sx={(theme) => ({ mt: 1, color: theme.dmr.textos.secondary })}>
                             Usa tu nombre de usuario o correo electrónico.
                         </Typography>
                     </Box>

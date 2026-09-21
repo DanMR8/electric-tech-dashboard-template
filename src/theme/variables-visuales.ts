@@ -165,6 +165,7 @@ export const typography = {
         base: baseFontFamily,
         numeric: numericFontFamily,
     },
+    micro: { fontFamily: baseFontFamily, fontSize: "0.625rem", lineHeight: 1.3, fontWeight: 400, letterSpacing: "0.01em" },
     xs: { fontFamily: baseFontFamily, fontSize: "0.6875rem", lineHeight: 1.35, fontWeight: 400, letterSpacing: "0.01em" },
     sm: { fontFamily: baseFontFamily, fontSize: "0.75rem", lineHeight: 1.4, fontWeight: 400, letterSpacing: "0.005em" },
     md: { fontFamily: baseFontFamily, fontSize: "0.875rem", lineHeight: 1.5, fontWeight: 400, letterSpacing: "0" },
@@ -194,6 +195,7 @@ function numericStyle(
 }
 
 export const numericTypography = {
+    micro: numericStyle("micro", 500, "0.015em"),
     xs: numericStyle("xs", 500, "0.015em"),
     sm: numericStyle("sm", 500, "0.01em"),
     md: numericStyle("md", 500, "0.005em"),
@@ -246,6 +248,39 @@ export const radius = {
     md: 14,
     lg: 20,
     pill: 999,
+} as const;
+
+// Medidas finas: geometría numérica que ECharts/canvas/SVG consumen como valores
+// (no como cadenas CSS). Complementan a spacing (mínimo 4px) y tipografía (mínimo micro).
+export const medidas = {
+    trazos: {
+        fino: 2,
+        medio: 3,
+        sparkline: 2.4,
+    },
+    neones: {
+        suave: 10,
+        brillante: 12,
+        desplazamientoY: 4,
+    },
+    serieLinea: {
+        simbolo: 6,
+        leyendaIcono: 10,
+        leyendaGap: 16,
+    },
+    decorativos: {
+        dona: 160,
+        sparklineAlto: 46,
+    },
+    microChips: {
+        chico: 20,
+        medio: 22,
+    },
+    barras: {
+        fina: 4,
+        media: 5,
+    },
+    textoCanvas: 12,
 } as const;
 
 export const variablesMovimiento = {
@@ -319,6 +354,7 @@ export interface DmrCharts {
 
 export interface DmrTypography {
     fontFamily: typeof typography.fontFamily;
+    micro: typeof typography.micro;
     xs: typeof typography.xs;
     sm: typeof typography.sm;
     md: typeof typography.md;
@@ -353,12 +389,13 @@ export interface DmrTheme {
     charts: DmrCharts;
     typography: DmrTypography;
     spacing: typeof spacing;
+    radius: typeof radius;
+    medidas: typeof medidas;
     density: {
         comfortable: typeof comfortableDensity;
         default: typeof defaultDensity;
         compact: typeof compactDensity;
     };
-    radius: typeof radius;
     elevation: DmrElevation;
     motion: typeof variablesMovimiento;
     layout: typeof variablesLayout;

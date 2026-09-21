@@ -9,6 +9,7 @@ import {
     estados,
     financial,
     green,
+    medidas,
     neutral,
     numericTypography,
     primary,
@@ -126,6 +127,7 @@ const baseTheme = {
         compact: compactDensity,
     },
     radius,
+    medidas,
     motion: variablesMovimiento,
     layout: variablesLayout,
 } as const;

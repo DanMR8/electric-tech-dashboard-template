@@ -35,7 +35,9 @@ function EstadoBootstrap({
             ) : (
                 <Stack sx={{ alignItems: "center", gap: 2 }}>
                     <CircularProgress size={28} />
-                    <Typography color="text.secondary">Comprobando sesión…</Typography>
+                    <Typography sx={(theme) => ({ color: theme.dmr.textos.secondary })}>
+                        Comprobando sesión…
+                    </Typography>
                 </Stack>
             )}
         </Box>

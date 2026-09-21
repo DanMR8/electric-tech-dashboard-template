@@ -249,6 +249,31 @@ export function crearTemaMui(dmrTheme: DmrTheme) {
                     },
                 },
             },
+            MuiAlert: {
+                styleOverrides: {
+                    root: { borderRadius: dmrTheme.radius.sm },
+                    colorSuccess: {
+                        backgroundColor: dmrTheme.estados.success.subtle,
+                        color: dmrTheme.estados.success.foreground,
+                        "& .MuiAlert-icon": { color: dmrTheme.estados.success.default },
+                    },
+                    colorError: {
+                        backgroundColor: dmrTheme.estados.error.subtle,
+                        color: dmrTheme.estados.error.foreground,
+                        "& .MuiAlert-icon": { color: dmrTheme.estados.error.default },
+                    },
+                    colorWarning: {
+                        backgroundColor: dmrTheme.estados.warning.subtle,
+                        color: dmrTheme.estados.warning.foreground,
+                        "& .MuiAlert-icon": { color: dmrTheme.estados.warning.default },
+                    },
+                    colorInfo: {
+                        backgroundColor: dmrTheme.estados.info.subtle,
+                        color: dmrTheme.estados.info.foreground,
+                        "& .MuiAlert-icon": { color: dmrTheme.estados.info.default },
+                    },
+                },
+            },
         },
     });
 }

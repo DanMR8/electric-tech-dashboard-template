@@ -29,6 +29,13 @@ import { ControlEsquemaColor, crearTemaEcharts } from "../../theme";
 const magnitudesNumericas = ["md", "xl", "3xl", "5xl"] as const;
 const cssPx = (value: number) => `${value}px`;
 
+// NOTA DE PUREZA DMR:
+// Colores, tipografías, radios, sombras, espaciados, densidades, movimiento y también la
+// geometría fina de los charts (trazos, neones, símbolos, dona, microchips y barras)
+// provienen exclusivamente de theme.dmr (variable `dmr` reactiva al esquema activo).
+// Escala de referencia: medidas (geometría numérica ECharts/canvas), spacing (>=4px),
+// typography.micro (fuente mínima).
+
 // 1. UTILIDADES DE ESTILOS BASE
 function glassPanelStyles(theme: Theme, softAccent: string) {
     const dmr = theme.dmr;
@@ -142,6 +149,7 @@ function Sparkline({
     points: readonly number[];
     color: string;
 }) {
+    const { dmr } = useTheme();
     const id = useId().replace(/:/g, "");
     const min = Math.min(...points);
     const max = Math.max(...points);
@@ -160,7 +168,7 @@ function Sparkline({
             viewBox="0 0 120 36"
             role="presentation"
             aria-hidden="true"
-            style={{ display: "block", width: "100%", height: 46 }}
+            style={{ display: "block", width: "100%", height: dmr.medidas.decorativos.sparklineAlto }}
         >
             <defs>
                 <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
@@ -173,7 +181,7 @@ function Sparkline({
                 points={linePoints}
                 fill="none"
                 stroke={color}
-                strokeWidth="2.4"
+                strokeWidth={dmr.medidas.trazos.sparkline}
                 strokeLinecap="round"
                 strokeLinejoin="round"
             />
@@ -323,11 +331,11 @@ function GraficaTelemetriaMaquinaria() {
                 trigger: "axis",
                 backgroundColor: dmr.glass.background,
                 borderColor: dmr.borders.subtle,
-                padding: [8, 12],
+                padding: [dmr.spacing.sm, dmr.spacing.md],
                 textStyle: {
                     color: dmr.textos.primary,
                     fontFamily: dmr.typography.fontFamily.base,
-                    fontSize: 12,
+                    fontSize: dmr.medidas.textoCanvas,
                 },
                 axisPointer: {
                     type: "line",
@@ -349,13 +357,13 @@ function GraficaTelemetriaMaquinaria() {
                 top: 0,
                 right: "center",
                 icon: "circle",
-                itemWidth: 10,
-                itemHeight: 10,
-                itemGap: 16,
+                itemWidth: dmr.medidas.serieLinea.leyendaIcono,
+                itemHeight: dmr.medidas.serieLinea.leyendaIcono,
+                itemGap: dmr.medidas.serieLinea.leyendaGap,
                 textStyle: {
                     color: dmr.textos.secondary,
                     fontFamily: dmr.typography.fontFamily.base,
-                    fontSize: 12,
+                    fontSize: dmr.medidas.textoCanvas,
                 },
             },
             xAxis: {
@@ -391,20 +399,20 @@ function GraficaTelemetriaMaquinaria() {
                     smooth: 0.35, // Suavizado orgánico para telemetría
                     showSymbol: false,
                     symbol: "circle",
-                    symbolSize: 6,
+                    symbolSize: dmr.medidas.serieLinea.simbolo,
                     data: [1.2, 1.5, 1.4, 2.1, 2.8, 1.9, 1.7, 1.3],
                     lineStyle: {
-                        width: 3,
+                        width: dmr.medidas.trazos.medio,
                         color: dmr.primary.default,
                         // Añadimos sombra neón nativa en el trazo para mantener la estética 'Electric'
                         shadowColor: dmr.primary.subtle,
-                        shadowBlur: 12,
-                        shadowOffsetY: 4,
+                        shadowBlur: dmr.medidas.neones.brillante,
+                        shadowOffsetY: dmr.medidas.neones.desplazamientoY,
                     },
                     itemStyle: {
                         color: dmr.primary.default,
                         borderColor: dmr.superficies.card,
-                        borderWidth: 2,
+                        borderWidth: dmr.medidas.trazos.fino,
                     },
                     areaStyle: {
                         color: {
@@ -424,7 +432,7 @@ function GraficaTelemetriaMaquinaria() {
                     emphasis: {
                         focus: "series",
                         itemStyle: {
-                            shadowBlur: 10,
+                            shadowBlur: dmr.medidas.neones.suave,
                             shadowColor: dmr.primary.subtle,
                         }
                     }
@@ -436,7 +444,7 @@ function GraficaTelemetriaMaquinaria() {
                     showSymbol: false,
                     data: [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5],
                     lineStyle: {
-                        width: 2,
+                        width: dmr.medidas.trazos.fino,
                         type: "dashed",
                         color: dmr.estados.error.default,
                         opacity: 0.8,
@@ -770,7 +778,7 @@ export function VisualFoundationsPage() {
                             <Box
                                 sx={{
                                     position: "relative",
-                                    width: 160,
+                                    width: dmr.medidas.decorativos.dona,
                                     aspectRatio: "1",
                                     borderRadius: cssPx(dmr.radius.pill),
                                     background: `conic-gradient(
@@ -810,7 +818,7 @@ export function VisualFoundationsPage() {
                                             <Typography sx={dmr.typography.sm}>{label}</Typography>
                                             <Typography sx={dmr.typography.numeric.sm}>{value}</Typography>
                                         </Stack>
-                                        <LinearProgress variant="determinate" value={Number.parseFloat(value)} sx={{ height: 4, bgcolor: dmr.superficies.interactive, "& .MuiLinearProgress-bar": { bgcolor: color } }} />
+                                        <LinearProgress variant="determinate" value={Number.parseFloat(value)} sx={{ height: dmr.medidas.barras.fina, bgcolor: dmr.superficies.interactive, "& .MuiLinearProgress-bar": { bgcolor: color } }} />
                                     </Box>
                                 ))}
                             </Stack>
@@ -875,13 +883,13 @@ export function VisualFoundationsPage() {
                                                 <Typography sx={{ ...dmr.typography.sm, fontWeight: 600 }}>{equipo}</Typography>
                                             </TableCell>
                                             <TableCell>
-                                                <Chip label={estado} size="small" sx={{ height: 20, fontSize: 10, bgcolor: dmr.superficies.interactive, border: `1px solid ${color}`, color }} />
+                                                <Chip label={estado} size="small" sx={{ height: dmr.medidas.microChips.chico, fontSize: dmr.typography.micro.fontSize, bgcolor: dmr.superficies.interactive, border: `1px solid ${color}`, color }} />
                                             </TableCell>
                                             <TableCell align="right" sx={dmr.typography.numeric.sm}>{lote}</TableCell>
                                             <TableCell align="right" sx={dmr.typography.numeric.sm}>{desviacion}</TableCell>
                                             <TableCell>
                                                 <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
-                                                    <LinearProgress variant="determinate" value={Number.parseFloat(salud)} sx={{ flex: 1, height: 5, borderRadius: cssPx(dmr.radius.pill), bgcolor: dmr.superficies.interactive, "& .MuiLinearProgress-bar": { bgcolor: color } }} />
+                                                    <LinearProgress variant="determinate" value={Number.parseFloat(salud)} sx={{ flex: 1, height: dmr.medidas.barras.media, borderRadius: cssPx(dmr.radius.pill), bgcolor: dmr.superficies.interactive, "& .MuiLinearProgress-bar": { bgcolor: color } }} />
                                                     <Typography sx={dmr.typography.numeric.xs}>{salud}%</Typography>
                                                 </Stack>
                                             </TableCell>
@@ -917,7 +925,7 @@ export function VisualFoundationsPage() {
                                 <Box>
                                     <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
                                         <Typography sx={{ ...dmr.typography.lg, fontWeight: 700 }}>Agente Analítico</Typography>
-                                        <Chip label="REPORTING" size="small" sx={{ height: 22, color: dmr.estados.ai.foreground, bgcolor: dmr.estados.ai.subtle }} />
+                                        <Chip label="REPORTING" size="small" sx={{ height: dmr.medidas.microChips.medio, color: dmr.estados.ai.foreground, bgcolor: dmr.estados.ai.subtle }} />
                                     </Stack>
                                     <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.secondary }}>Asistente de revisión estadística</Typography>
                                 </Box>
@@ -966,7 +974,15 @@ export function VisualFoundationsPage() {
                             </Box>
                             <Stack direction="row" useFlexGap sx={{ gap: cssPx(dmr.spacing.sm), flexWrap: "wrap" }}>
                                 <Button variant="contained">Aplicar Filtros</Button>
-                                <Button variant="outlined" color="secondary">Exportar Reporte CSV</Button>
+                                <Button
+                                    variant="outlined"
+                                    sx={(activeTheme) => ({
+                                        color: activeTheme.dmr.secondary.default,
+                                        borderColor: activeTheme.dmr.secondary.default,
+                                    })}
+                                >
+                                    Exportar Reporte CSV
+                                </Button>
                             </Stack>
                         </Stack>
 

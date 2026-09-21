@@ -62,14 +62,14 @@ function PanelEstadoSistema() {
             <Divider sx={{ borderColor: theme.dmr.borders.subtle }} />
 
             <Stack sx={{ gap: theme.dmr.spacing.xs }}>
-                <Typography color="text.secondary">Modo de integración</Typography>
+                <Typography sx={{ color: theme.dmr.textos.secondary }}>Modo de integración</Typography>
                 <Typography sx={{ fontWeight: 700 }}>
                     {apiConfig.mode.toUpperCase()}
                 </Typography>
             </Stack>
 
             <Stack sx={{ gap: theme.dmr.spacing.xs }}>
-                <Typography color="text.secondary">Entorno</Typography>
+                <Typography sx={{ color: theme.dmr.textos.secondary }}>Entorno</Typography>
                 <Typography sx={{ fontWeight: 700 }}>
                     {healthQuery.data?.environment ?? "local"}
                 </Typography>
@@ -108,7 +108,7 @@ export function HomePage() {
                         VoltDash
                     </Typography>
 
-                    <Typography color="text.secondary">
+                    <Typography sx={(theme) => ({ color: theme.dmr.textos.secondary })}>
                         Nueva plataforma web
                     </Typography>
                 </Box>
@@ -203,7 +203,10 @@ export function HomePage() {
                                     <Chip
                                         size="small"
                                         label={healthQuery.data.environment ?? apiConfig.mode}
-                                        color="success"
+                                        sx={(theme) => ({
+                                            bgcolor: theme.dmr.estados.success.subtle,
+                                            color: theme.dmr.estados.success.foreground,
+                                        })}
                                     />
                                 </Stack>
                             </Alert>
