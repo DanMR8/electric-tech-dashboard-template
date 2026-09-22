@@ -6,6 +6,7 @@ import {
     RutaSoloAnonimos,
 } from "../modules/auth";
 import { HomePage } from "../modules/home/HomePage";
+import { TracesPage } from "../modules/traces/TracesPage";
 import { VisualFoundationsPage } from "../modules/visual-foundations/VisualFoundationsPage";
 import { AppShell } from "./AppShell";
 
@@ -30,6 +31,10 @@ export const router = createBrowserRouter([
                     {
                         index: true,
                         element: <HomePage />,
+                    },
+                    {
+                        path: "traces",
+                        element: <TracesPage />,
                     },
                 ],
             },

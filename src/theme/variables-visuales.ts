@@ -276,6 +276,10 @@ export const medidas = {
         chico: 20,
         medio: 22,
     },
+    scrollbars: {
+        grosor: 8,
+        borde: 1,
+    },
     barras: {
         fina: 4,
         media: 5,
@@ -296,6 +300,8 @@ export const variablesLayout = {
     sidebarExpandedWidth: 240,
     sidebarCollapsedWidth: 72,
     rightPanelWidth: 360,
+    rightPanelWidthNarrow: 300,
+    rightPanelWidthWide: 460,
     // mainContentPaddingDefault: 24,
     // mainContentPaddingCompact: 16,
     mainContentPaddingDefault: 10,

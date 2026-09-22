@@ -17,9 +17,10 @@ import {
 import { useTheme } from "@mui/material/styles";
 import {
     HouseIcon,
+    ListIcon,
     PaletteIcon,
-    SidebarSimpleIcon,
     SignOutIcon,
+    TreeStructureIcon,
     XIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -35,16 +36,9 @@ interface AppShellProps {
 }
 
 const enlacesNavegacion = [
-    {
-        etiqueta: "Inicio",
-        ruta: "/",
-        icono: <HouseIcon size={20} aria-hidden="true" />,
-    },
-    {
-        etiqueta: "Fundamentos",
-        ruta: "/visual-foundations",
-        icono: <PaletteIcon size={20} aria-hidden="true" />,
-    },
+    { etiqueta: "Inicio", ruta: "/", Icono: HouseIcon },
+    { etiqueta: "Trazas", ruta: "/traces", Icono: TreeStructureIcon },
+    { etiqueta: "Fundamentos", ruta: "/visual-foundations", Icono: PaletteIcon },
 ] as const;
 
 function NavegacionLateral({
@@ -55,6 +49,9 @@ function NavegacionLateral({
     onNavigate?: () => void;
 }) {
     const location = useLocation();
+    // Ruta con foco/hover: permite escalar el peso del icono de forma
+    // dinámica (regular -> bold -> fill en la pestaña seleccionada).
+    const [enHover, setEnHover] = useState<string | null>(null);
 
     return (
         <List
@@ -64,55 +61,82 @@ function NavegacionLateral({
                 py: `${theme.dmr.spacing.md}px`,
             })}
         >
-            {enlacesNavegacion.map(({ etiqueta, ruta, icono }) => (
-                <Tooltip
-                    key={ruta}
-                    title={contraida ? etiqueta : ""}
-                    placement="right"
-                >
-                    <ListItemButton
-                        component={NavLink}
-                        to={ruta}
-                        selected={location.pathname === ruta}
-                        onClick={onNavigate}
-                        aria-label={contraida ? etiqueta : undefined}
-                        sx={(theme) => ({
-                            minHeight: theme.dmr.density.default.controlHeight,
-                            mx: `${theme.dmr.spacing.sm}px`,
-                            mb: `${theme.dmr.spacing.xs}px`,
-                            px: `${theme.dmr.spacing.md}px`,
-                            justifyContent: contraida ? "center" : "flex-start",
-                            borderRadius: `${theme.dmr.radius.sm}px`,
-                            overflow: "hidden",
-                        })}
+            {enlacesNavegacion.map(({ etiqueta, ruta, Icono }) => {
+                const seleccionada = location.pathname === ruta;
+
+                return (
+                    <Tooltip
+                        key={ruta}
+                        title={contraida ? etiqueta : ""}
+                        placement="right"
                     >
-                        <ListItemIcon
+                        <ListItemButton
+                            component={NavLink}
+                            to={ruta}
+                            selected={seleccionada}
+                            onClick={onNavigate}
+                            onMouseEnter={() => setEnHover(ruta)}
+                            onMouseLeave={() => setEnHover(null)}
+                            onFocus={() => setEnHover(ruta)}
+                            onBlur={() => setEnHover(null)}
+                            aria-label={contraida ? etiqueta : undefined}
                             sx={(theme) => ({
-                                minWidth: 0,
-                                mr: contraida ? 0 : `${theme.dmr.spacing.md}px`,
-                                justifyContent: "center",
-                                color: "inherit",
+                                minHeight: theme.dmr.density.default.controlHeight,
+                                mx: `${theme.dmr.spacing.sm}px`,
+                                mb: `${theme.dmr.spacing.xs}px`,
+                                px: `${theme.dmr.spacing.md}px`,
+                                justifyContent: contraida ? "center" : "flex-start",
+                                borderRadius: `${theme.dmr.radius.sm}px`,
+                                overflow: "hidden",
+                                "&:hover svg": {
+                                    transform: "scale(1.12)",
+                                },
                             })}
                         >
-                            {icono}
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={etiqueta}
-                            sx={{
-                                display: contraida ? "none" : "block",
-                                whiteSpace: "nowrap",
-                            }}
-                        />
-                    </ListItemButton>
-                </Tooltip>
-            ))}
+                            <ListItemIcon
+                                sx={(theme) => ({
+                                    minWidth: 0,
+                                    mr: contraida ? 0 : `${theme.dmr.spacing.md}px`,
+                                    justifyContent: "center",
+                                    color: seleccionada
+                                        ? theme.dmr.primary.default
+                                        : "inherit",
+                                    transition: `color ${theme.dmr.motion.duration.normal}ms ${theme.dmr.motion.easing.standard}`,
+                                    "& svg": {
+                                        transition: `transform ${theme.dmr.motion.duration.fast}ms ${theme.dmr.motion.easing.standard}`,
+                                    },
+                                })}
+                            >
+                                <Icono
+                                    size={20}
+                                    aria-hidden="true"
+                                    weight={
+                                        seleccionada
+                                            ? "fill"
+                                            : enHover === ruta
+                                              ? "bold"
+                                              : "regular"
+                                    }
+                                />
+                            </ListItemIcon>
+                            <ListItemText
+                                primary={etiqueta}
+                                sx={{
+                                    display: contraida ? "none" : "block",
+                                    whiteSpace: "nowrap",
+                                }}
+                            />
+                        </ListItemButton>
+                    </Tooltip>
+                );
+            })}
         </List>
     );
 }
 
 function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
     const theme = useTheme();
-    const { contenido, abierto } = usePanelLateral();
+    const { contenido, abierto, ancho } = usePanelLateral();
     const panel = contenido ?? sidePanel;
     const navigate = useNavigate();
     const sesionQuery = useSesionActual();
@@ -258,7 +282,7 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
                                     },
                                 })}
                             >
-                                <SidebarSimpleIcon size={22} aria-hidden="true" />
+                                <ListIcon size={22} aria-hidden="true" />
                             </IconButton>
                         </Tooltip>
                     </Box>
@@ -364,7 +388,7 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
                                         {mobileNavigationOpen ? (
                                             <XIcon size={22} aria-hidden="true" />
                                         ) : (
-                                            <SidebarSimpleIcon size={22} aria-hidden="true" />
+                                            <ListIcon size={22} aria-hidden="true" />
                                         )}
                                     </IconButton>
                                 </Tooltip>
@@ -485,7 +509,9 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
 
                         {/* Panel lateral global: lo rellena la página activa
                             vía usePanelLateral, o el prop sidePanel como legado.
-                            Visible solo en escritorio amplio y si está abierto. */}
+                            Visible solo en escritorio amplio y si está abierto.
+                            El ancho lo decide el contenido (ancho/estandar/angosto)
+                            para adaptarse a la distribución de cada módulo. */}
                         {panel && abierto ? (
                             <Box
                                 id="panel-lateral"
@@ -493,7 +519,12 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
                                 sx={(currentTheme) => ({
                                     display: { xs: "none", lg: "block" },
                                     flex: "0 0 auto",
-                                    width: currentTheme.dmr.layout.rightPanelWidth,
+                                    width:
+                                        ancho === "angosto"
+                                            ? currentTheme.dmr.layout.rightPanelWidthNarrow
+                                            : ancho === "ancho"
+                                              ? currentTheme.dmr.layout.rightPanelWidthWide
+                                              : currentTheme.dmr.layout.rightPanelWidth,
                                     minWidth: 0,
                                     minHeight: 0,
                                     overflowX: "hidden",
@@ -501,6 +532,7 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
                                     bgcolor: currentTheme.dmr.superficies.panel,
                                     borderLeft: `1px solid ${currentTheme.dmr.borders.subtle}`,
                                     p: `${currentTheme.dmr.spacing.lg}px`,
+                                    transition: `width ${currentTheme.dmr.motion.duration.normal}ms ${currentTheme.dmr.motion.easing.standard}`,
                                 })}
                             >
                                 {panel}

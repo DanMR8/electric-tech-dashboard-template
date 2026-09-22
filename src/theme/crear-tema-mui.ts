@@ -111,7 +111,34 @@ export function crearTemaMui(dmrTheme: DmrTheme) {
         components: {
             MuiCssBaseline: {
                 styleOverrides: {
-                    html: { backgroundColor: dmrTheme.superficies.background },
+                    html: {
+                        backgroundColor: dmrTheme.superficies.background,
+                        // Scrollbars: colores y grosor heredables (Firefox).
+                        scrollbarWidth: "thin",
+                        scrollbarColor: `${dmrTheme.borders.strong} transparent`,
+                        // WebKit: thumb pill con borde interno transparente para
+                        // no pegar al borde; track invisible; hover en foco.
+                        "&::-webkit-scrollbar": {
+                            width: dmrTheme.medidas.scrollbars.grosor,
+                            height: dmrTheme.medidas.scrollbars.grosor,
+                        },
+                        "&::-webkit-scrollbar-track": {
+                            backgroundColor: "transparent",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                            backgroundColor: dmrTheme.borders.strong,
+                            border: `${dmrTheme.medidas.scrollbars.borde}px solid transparent`,
+                            backgroundClip: "padding-box",
+                            borderRadius: dmrTheme.radius.pill,
+                            transition: `background-color ${dmrTheme.motion.duration.normal}ms ${dmrTheme.motion.easing.standard}`,
+                        },
+                        "&::-webkit-scrollbar-thumb:hover": {
+                            backgroundColor: dmrTheme.borders.focus,
+                        },
+                        "&::-webkit-scrollbar-corner": {
+                            backgroundColor: "transparent",
+                        },
+                    },
                     body: {
                         backgroundColor: dmrTheme.superficies.background,
                         color: dmrTheme.textos.primary,

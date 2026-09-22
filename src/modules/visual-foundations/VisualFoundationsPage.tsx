@@ -1,4 +1,10 @@
 import {
+    ArrowsClockwiseIcon,
+    GaugeIcon,
+    ProhibitIcon,
+    TimerIcon,
+} from "@phosphor-icons/react";
+import {
     Box,
     Button,
     Chip,
@@ -18,16 +24,15 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import type { Theme } from "@mui/material/styles";
-import * as echarts from "echarts";
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import * as echarts from "echarts";
 
 // Importaciones relativas de tu tema local
 import { ControlEsquemaColor, crearTemaEcharts } from "../../theme";
+import { cssPx, glassPanelStyles, solidPanelStyles } from "../../shared/styles/superficies";
 
 // const magnitudes = ["xs", "sm", "md", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl"] as const;
 const magnitudesNumericas = ["md", "xl", "3xl", "5xl"] as const;
-const cssPx = (value: number) => `${value}px`;
 
 // NOTA DE PUREZA DMR:
 // Colores, tipografías, radios, sombras, espaciados, densidades, movimiento y también la
@@ -37,51 +42,8 @@ const cssPx = (value: number) => `${value}px`;
 // typography.micro (fuente mínima).
 
 // 1. UTILIDADES DE ESTILOS BASE
-function glassPanelStyles(theme: Theme, softAccent: string) {
-    const dmr = theme.dmr;
-
-    return {
-        position: "relative",
-        overflow: "hidden",
-        isolation: "isolate",
-        color: dmr.textos.primary,
-        backgroundColor: dmr.glass.background,
-        backgroundImage: [
-            `linear-gradient(135deg, ${dmr.glass.highlight}, transparent 38%)`,
-            `radial-gradient(circle at 100% 0%, ${softAccent}, transparent 46%)`,
-        ].join(", "),
-        border: `1px solid ${dmr.glass.border}`,
-        boxShadow: `${dmr.elevation.floating}, inset 0 1px 0 ${dmr.glass.highlight}`,
-        backdropFilter: `blur(${dmr.glass.blur}) saturate(${dmr.glass.saturate})`,
-        WebkitBackdropFilter: `blur(${dmr.glass.blur}) saturate(${dmr.glass.saturate})`,
-        borderRadius: cssPx(dmr.radius.lg),
-        "&::before": {
-            content: '""',
-            position: "absolute",
-            inset: 0,
-            zIndex: -1,
-            pointerEvents: "none",
-            background: `linear-gradient(115deg, transparent 18%, ${dmr.glass.highlight} 48%, transparent 72%)`,
-            opacity: 0.38,
-            transform: "translateX(-58%)",
-        },
-    } as const;
-}
-
-function solidPanelStyles(theme: Theme) {
-    const dmr = theme.dmr;
-
-    return {
-        position: "relative",
-        minWidth: 0,
-        overflow: "hidden",
-        borderRadius: cssPx(dmr.radius.md),
-        border: `1px solid ${dmr.borders.subtle}`,
-        backgroundColor: dmr.superficies.card,
-        boxShadow: dmr.elevation.card,
-    } as const;
-}
-
+// glassPanelStyles y solidPanelStyles viven en src/shared/styles/superficies.ts
+// (precedente de estandarización no formalizado).
 function SectionHeading({
                             eyebrow,
                             title,
@@ -202,7 +164,7 @@ function MetricCard({
     label: string;
     value: string;
     meta: string;
-    glyph: string;
+    glyph: ReactNode;
     accent: string;
     softAccent: string;
     valueColor: string;
@@ -276,7 +238,9 @@ function MetricCard({
                         boxShadow: `0 0 26px ${softAccent}`,
                     })}
                 >
-                    <Typography sx={(theme) => ({ ...theme.dmr.typography.sm, fontWeight: 700 })}>
+                    <Typography
+                        sx={(theme) => ({ ...theme.dmr.typography.sm, fontWeight: 700, display: "inline-flex", alignItems: "center" })}
+                    >
                         {glyph}
                     </Typography>
                 </Box>
@@ -288,7 +252,7 @@ function MetricCard({
     );
 }
 
-function GraficaTelemetriaMaquinaria() {
+function GraficaLatenciaInferencia() {
     const containerRef = useRef<HTMLDivElement>(null);
     const theme = useTheme();
 
@@ -389,18 +353,18 @@ function GraficaTelemetriaMaquinaria() {
                 },
                 axisLabel: {
                     color: dmr.textos.tertiary,
-                    formatter: (value: number) => `${value} mm/s`,
+                    formatter: (value: number) => `${value} ms`,
                 },
             },
             series: [
                 {
-                    name: "Vibración RMS Histórica",
+                    name: "Latencia p95 Histórica",
                     type: "line",
                     smooth: 0.35, // Suavizado orgánico para telemetría
                     showSymbol: false,
                     symbol: "circle",
                     symbolSize: dmr.medidas.serieLinea.simbolo,
-                    data: [1.2, 1.5, 1.4, 2.1, 2.8, 1.9, 1.7, 1.3],
+                    data: [185, 240, 210, 480, 650, 340, 290, 265],
                     lineStyle: {
                         width: dmr.medidas.trazos.medio,
                         color: dmr.primary.default,
@@ -438,11 +402,11 @@ function GraficaTelemetriaMaquinaria() {
                     }
                 },
                 {
-                    name: "Límite Estadístico de Control",
+                    name: "SLA Máximo Permitido (800 ms)",
                     type: "line",
                     smooth: 0,
                     showSymbol: false,
-                    data: [2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5],
+                    data: [800, 800, 800, 800, 800, 800, 800, 800],
                     lineStyle: {
                         width: dmr.medidas.trazos.fino,
                         type: "dashed",
@@ -476,7 +440,7 @@ function GraficaTelemetriaMaquinaria() {
         <Box
             ref={containerRef}
             role="img"
-            aria-label="Monitoreo estadístico de vibración y telemetría"
+            aria-label="Monitoreo de latencia de generación (TTFT) frente al SLA máximo permitido"
             sx={{
                 width: "100%",
                 // Altura explícita escalonada para asegurar la visibilidad perfecta en móviles
@@ -490,7 +454,7 @@ function GraficaTelemetriaMaquinaria() {
     );
 }
 
-// 3. VISTA PRINCIPAL: DASHBOARD ESTADÍSTICO Y LOGÍSTICO
+// 3. VISTA PRINCIPAL: DASHBOARD DE OPERACIONES IA
 export function VisualFoundationsPage() {
     const theme = useTheme();
     const dmr = theme.dmr;
@@ -516,43 +480,43 @@ export function VisualFoundationsPage() {
         ["Analysis", dmr.estados.ai.default, dmr.estados.ai.subtle],
     ] as const;
 
-    // Métricas estadísticas y logísticas de planta
-    const metricasPlanta = [
+    // Métricas de operación del gateway de inferencia
+    const metricasSistema = [
         {
-            label: "OEE Logístico (Eficiencia)",
+            label: "Cache Hit Rate",
             value: "84.2%",
-            meta: "Promedio del turno actual",
-            glyph: "📊",
+            meta: "Promedio de aciertos de la última hora",
+            glyph: <GaugeIcon size={20} weight="fill" />,
             accent: dmr.primary.default,
             softAccent: dmr.primary.subtle,
             valueColor: dmr.textos.primary,
             points: [78, 79, 81, 80, 83, 85, 84, 82, 84, 85, 84, 84],
         },
         {
-            label: "Volumen Procesado",
+            label: "Peticiones Procesadas",
             value: "4,250",
-            meta: "Unidades liberadas a calidad",
-            glyph: "📦",
+            meta: "Peticiones atendidas por el gateway (24h)",
+            glyph: <ArrowsClockwiseIcon size={20} weight="fill" />,
             accent: dmr.estados.success.default,
             softAccent: dmr.estados.success.subtle,
             valueColor: dmr.estados.success.foreground,
             points: [30, 45, 42, 60, 55, 70, 68, 80, 75, 85, 82, 90],
         },
         {
-            label: "Dispersión Dimensional",
-            value: "σ 0.02mm",
-            meta: "Índice de capacidad Cpk: 1.33",
-            glyph: "◷",
+            label: "Latencia Media (p50)",
+            value: "240 ms",
+            meta: "Percentil 50 del tiempo a primer token",
+            glyph: <TimerIcon size={20} weight="fill" />,
             accent: dmr.estados.warning.default,
             softAccent: dmr.estados.warning.subtle,
             valueColor: dmr.estados.warning.foreground,
-            points: [15, 16, 15, 20, 25, 22, 18, 17, 20, 19, 15, 14],
+            points: [182, 190, 186, 212, 240, 226, 205, 196, 210, 204, 192, 188],
         },
         {
-            label: "Índice de Rechazo (Scrap)",
+            label: "Tasa de Rate Limits (HTTP 429)",
             value: "0.85%",
-            meta: "Desviación bajo el límite de 1.5%",
-            glyph: "📉",
+            meta: "Umbral objetivo: <1.0% de peticiones rechazadas",
+            glyph: <ProhibitIcon size={20} weight="fill" />,
             accent: dmr.estados.error.default,
             softAccent: dmr.estados.error.subtle,
             valueColor: dmr.estados.error.foreground,
@@ -560,12 +524,12 @@ export function VisualFoundationsPage() {
         },
     ] as const;
 
-    const maquinaria = [
-        ["Línea A - Desbaste", "Activo", "Turno Matutino", "±0.01mm", "98", dmr.estados.success.foreground],
-        ["Línea B - Acabado", "Mantenimiento", "Turno Matutino", "---", "100", dmr.estados.info.foreground],
-        ["Prensa Hidráulica", "Activo", "Continuo", "---", "85", dmr.estados.success.foreground],
-        ["Metrología CMM", "Revisión", "Lote 402", "±0.03mm", "72", dmr.estados.warning.foreground],
-        ["Zona de Corte", "Fuera Línea", "Sin Asignar", "---", "0", dmr.estados.error.foreground],
+    const nodosCluster = [
+        ["GPU Node 01 (Llama-3)", "Activo", "GPU Local (CUDA)", "14 GB", "98", dmr.estados.success.foreground],
+        ["GPU Node 02 (Mistral-7B)", "Mantenimiento", "GPU Local (CUDA)", "---", "64", dmr.estados.info.foreground],
+        ["CPU Cluster (Embeddings)", "Activo", "CPU Cluster", "---", "85", dmr.estados.success.foreground],
+        ["Qdrant Vector DB", "Revisión", "Vector DB (Docker)", "8 GB", "72", dmr.estados.warning.foreground],
+        ["OpenAI (Fallback)", "Fuera Línea", "API Remota", "---", "0", dmr.estados.error.foreground],
     ] as const;
 
     return (
@@ -641,7 +605,7 @@ export function VisualFoundationsPage() {
                                 }}
                             >
                                 <Chip
-                                    label="ELECTRIC ANALYTICS"
+                                    label="APEX DESIGN SYSTEM"
                                     size="small"
                                     sx={{
                                         color: dmr.primary.default,
@@ -649,8 +613,8 @@ export function VisualFoundationsPage() {
                                         border: `1px solid ${dmr.primary.default}`,
                                     }}
                                 />
-                                <Chip label="LOGISTICS UI" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />
-                                <Chip label="SPC DATA" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />
+                                <Chip label="AI OPS FOUNDATIONS" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />
+                                <Chip label="LLM TELEMETRY" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />
                             </Stack>
 
                             <Typography
@@ -664,7 +628,7 @@ export function VisualFoundationsPage() {
                                     color: "transparent",
                                 }}
                             >
-                                Análisis estadístico, logística y telemetría de manufactura.
+                                Base visual para el monitoreo de clústeres de inferencia y telemetría de LLMs.
                             </Typography>
                             <Typography
                                 sx={{
@@ -674,7 +638,7 @@ export function VisualFoundationsPage() {
                                     mt: cssPx(dmr.spacing.md),
                                 }}
                             >
-                                Panel de observación para supervisión de calidad y logística. Analiza la variabilidad de los procesos y métricas de rendimiento (OEE) de forma segura y centralizada.
+                                Panel de observación para operaciones de IA. Analiza la latencia de inferencia, el enrutamiento del tráfico y la salud de los nodos de cómputo de forma segura y centralizada.
                             </Typography>
                         </Box>
 
@@ -715,9 +679,9 @@ export function VisualFoundationsPage() {
 
                             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: cssPx(dmr.spacing.sm) }}>
                                 {[
-                                    ["5", "Líneas"],
-                                    ["1.33", "Cpk Prom"],
-                                    ["12h", "Ventana"],
+                                    ["12", "Nodos"],
+                                    ["800ms", "SLA p95"],
+                                    ["24h", "Ventana"],
                                 ].map(([value, label]) => (
                                     <Box
                                         key={label}
@@ -738,7 +702,7 @@ export function VisualFoundationsPage() {
                     </Stack>
                 </Box>
 
-                {/* 2. GRÁFICA LOGÍSTICA Y DISTRIBUCIÓN DE PRODUCCIÓN */}
+                {/* 2. GRÁFICA DE LATENCIA Y DISTRIBUCIÓN DE TRÁFICO */}
                 <Box
                     sx={{
                         display: "grid",
@@ -753,13 +717,13 @@ export function VisualFoundationsPage() {
                     <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
                         <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) } }}>
                             <SectionHeading
-                                eyebrow="Estadística de Proceso"
-                                title="Análisis de Vibración Histórica"
-                                description="Revisión analítica de la telemetría recolectada respecto a los límites de control de calidad."
+                                eyebrow="Latencia de Inferencia"
+                                title="Latencia de Generación (TTFT)"
+                                description="Revisión analítica de la latencia recolectada respecto al SLA máximo permitido del gateway."
                                 action={
                                     <Box sx={{ display: "flex", gap: cssPx(dmr.spacing.xs), p: cssPx(dmr.spacing.xs), borderRadius: cssPx(dmr.radius.sm), bgcolor: dmr.superficies.interactive }}>
-                                        {["Ayer", "Turno 1", "Turno 2", "Semana"].map((period) => (
-                                            <Button key={period} size="small" variant={period === "Turno 1" ? "contained" : "text"} sx={{ minWidth: 44 }}>
+                                        {["15m", "1h", "24h", "7d"].map((period) => (
+                                            <Button key={period} size="small" variant={period === "1h" ? "contained" : "text"} sx={{ minWidth: 44 }}>
                                                 {period}
                                             </Button>
                                         ))}
@@ -767,13 +731,13 @@ export function VisualFoundationsPage() {
                                 }
                             />
                             <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
-                                <GraficaTelemetriaMaquinaria />
+                                <GraficaLatenciaInferencia />
                             </Box>
                         </Box>
                     </Box>
 
                     <Box sx={(activeTheme) => ({ ...solidPanelStyles(activeTheme), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Logística" title="Distribución de Lotes" description="Proporción del volumen de producción analizado por sector." />
+                        <SectionHeading eyebrow="Enrutamiento" title="Distribución de Tráfico de Inferencia" description="Proporción del tráfico enrutado por tipo de cómputo." />
                         <Box sx={{ display: "flex", flexDirection: "column", gap: cssPx(dmr.spacing.xl), mt: cssPx(dmr.spacing.xl), alignItems: "center" }}>
                             <Box
                                 sx={{
@@ -808,10 +772,10 @@ export function VisualFoundationsPage() {
 
                             <Stack sx={{ gap: cssPx(dmr.spacing.md), width: "100%" }}>
                                 {[
-                                    ["Sector A (Desbaste)", "40%", dmr.primary.default],
-                                    ["Sector B (Acabado)", "25%", dmr.secondary.default],
-                                    ["Cuarentena (QA)", "20%", dmr.estados.warning.default],
-                                    ["Liberación Final", "15%", dmr.estados.success.default],
+                                    ["Modelos Locales (GPU)", "40%", dmr.primary.default],
+                                    ["Modelos CPU", "25%", dmr.secondary.default],
+                                    ["RAG / Embeddings", "20%", dmr.estados.warning.default],
+                                    ["OpenAI (Fallback)", "15%", dmr.estados.success.default],
                                 ].map(([label, value, color]) => (
                                     <Box key={label}>
                                         <Stack direction="row" sx={{ justifyContent: "space-between", mb: cssPx(dmr.spacing.xs) }}>
@@ -826,7 +790,7 @@ export function VisualFoundationsPage() {
                     </Box>
                 </Box>
 
-                {/* 3. MÉTRICAS LOGÍSTICAS */}
+                {/* 3. MÉTRICAS DE OPERACIÓN */}
                 <Box
                     sx={{
                         display: "grid",
@@ -838,12 +802,12 @@ export function VisualFoundationsPage() {
                         gap: cssPx(dmr.spacing.lg),
                     }}
                 >
-                    {metricasPlanta.map((metric) => (
+                    {metricasSistema.map((metric) => (
                         <MetricCard key={metric.label} {...metric} />
                     ))}
                 </Box>
 
-                {/* 4. TABLA DE ANÁLISIS HISTÓRICO E INFORME IA */}
+                {/* 4. TABLA DE NODOS E INFORME IA */}
                 <Box
                     sx={{
                         display: "grid",
@@ -858,9 +822,9 @@ export function VisualFoundationsPage() {
                     <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
                         <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) }, pb: cssPx(dmr.spacing.md) }}>
                             <SectionHeading
-                                eyebrow="Registro de Operaciones"
-                                title="Resumen de Líneas de Producción"
-                                description="Datos agregados de las células principales durante el periodo seleccionado."
+                                eyebrow="Registro de Infraestructura"
+                                title="Resumen de Nodos del Clúster"
+                                description="Datos agregados de los nodos del clúster durante el periodo seleccionado."
                                 action={<Chip label="Última actualización: 14:00" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />}
                             />
                         </Box>
@@ -869,28 +833,28 @@ export function VisualFoundationsPage() {
                             <Table size="small">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Área Logística</TableCell>
-                                        <TableCell>Estado de Toma</TableCell>
-                                        <TableCell align="right">Lote / Turno</TableCell>
-                                        <TableCell align="right">Desviación Típica</TableCell>
-                                        <TableCell sx={{ minWidth: 120 }}>Eficiencia Reportada</TableCell>
+                                        <TableCell>Nodo de Inferencia</TableCell>
+                                        <TableCell>Estado del Nodo</TableCell>
+                                        <TableCell align="right">Backend / Entorno</TableCell>
+                                        <TableCell align="right">VRAM Usada</TableCell>
+                                        <TableCell sx={{ minWidth: 120 }}>Uso de Capacidad</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {maquinaria.map(([equipo, estado, lote, desviacion, salud, color]) => (
-                                        <TableRow key={equipo} hover>
+                                    {nodosCluster.map(([nodo, estado, backend, vram, capacidad, color]) => (
+                                        <TableRow key={nodo} hover>
                                             <TableCell>
-                                                <Typography sx={{ ...dmr.typography.sm, fontWeight: 600 }}>{equipo}</Typography>
+                                                <Typography sx={{ ...dmr.typography.sm, fontWeight: 600 }}>{nodo}</Typography>
                                             </TableCell>
                                             <TableCell>
                                                 <Chip label={estado} size="small" sx={{ height: dmr.medidas.microChips.chico, fontSize: dmr.typography.micro.fontSize, bgcolor: dmr.superficies.interactive, border: `1px solid ${color}`, color }} />
                                             </TableCell>
-                                            <TableCell align="right" sx={dmr.typography.numeric.sm}>{lote}</TableCell>
-                                            <TableCell align="right" sx={dmr.typography.numeric.sm}>{desviacion}</TableCell>
+                                            <TableCell align="right" sx={dmr.typography.numeric.sm}>{backend}</TableCell>
+                                            <TableCell align="right" sx={dmr.typography.numeric.sm}>{vram}</TableCell>
                                             <TableCell>
                                                 <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
-                                                    <LinearProgress variant="determinate" value={Number.parseFloat(salud)} sx={{ flex: 1, height: dmr.medidas.barras.media, borderRadius: cssPx(dmr.radius.pill), bgcolor: dmr.superficies.interactive, "& .MuiLinearProgress-bar": { bgcolor: color } }} />
-                                                    <Typography sx={dmr.typography.numeric.xs}>{salud}%</Typography>
+                                                    <LinearProgress variant="determinate" value={Number.parseFloat(capacidad)} sx={{ flex: 1, height: dmr.medidas.barras.media, borderRadius: cssPx(dmr.radius.pill), bgcolor: dmr.superficies.interactive, "& .MuiLinearProgress-bar": { bgcolor: color } }} />
+                                                    <Typography sx={dmr.typography.numeric.xs}>{capacidad}%</Typography>
                                                 </Stack>
                                             </TableCell>
                                         </TableRow>
@@ -924,22 +888,22 @@ export function VisualFoundationsPage() {
                                 </Box>
                                 <Box>
                                     <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
-                                        <Typography sx={{ ...dmr.typography.lg, fontWeight: 700 }}>Agente Analítico</Typography>
-                                        <Chip label="REPORTING" size="small" sx={{ height: dmr.medidas.microChips.medio, color: dmr.estados.ai.foreground, bgcolor: dmr.estados.ai.subtle }} />
+                                        <Typography sx={{ ...dmr.typography.lg, fontWeight: 700 }}>Agente de Operaciones</Typography>
+                                        <Chip label="OBSERVABILITY" size="small" sx={{ height: dmr.medidas.microChips.medio, color: dmr.estados.ai.foreground, bgcolor: dmr.estados.ai.subtle }} />
                                     </Stack>
-                                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.secondary }}>Asistente de revisión estadística</Typography>
+                                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.secondary }}>Asistente de operaciones de inferencia</Typography>
                                 </Box>
                             </Stack>
 
                             <Box sx={{ p: cssPx(dmr.spacing.lg), borderRadius: cssPx(dmr.radius.md), bgcolor: dmr.superficies.interactive, border: `1px solid ${dmr.borders.default}` }}>
-                                <Typography sx={{ ...dmr.typography.md, fontWeight: 600 }}>Desviación en el historial térmico del sector A.</Typography>
+                                <Typography sx={{ ...dmr.typography.md, fontWeight: 600 }}>Saturación detectada en la memoria KV Cache del Nodo GPU 02.</Typography>
                                 <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary, mt: cssPx(dmr.spacing.sm) }}>
-                                    Los datos recopilados del último turno muestran una tendencia ascendente en el coeficiente de fricción. Se sugiere incluir este hallazgo en el reporte para programar mantenimiento preventivo en el próximo ciclo.
+                                    Los datos de la última ventana muestran presión creciente en el contexto KV del nodo. Se sugiere incrementar el umbral de fallback a la nube en el próximo pico de tráfico para proteger la latencia p95 del clúster.
                                 </Typography>
                             </Box>
 
                             <Stack direction="row" useFlexGap sx={{ gap: cssPx(dmr.spacing.sm), flexWrap: "wrap" }}>
-                                {["Generar Orden de Trabajo", "Ver Historial de Fallas", "Exportar Telemetría"].map((label) => (
+                                {["Ajustar Umbral de Fallback", "Ver Historial del Nodo", "Exportar Trazas"].map((label) => (
                                     <Chip key={label} label={label} variant="outlined" sx={{ color: dmr.textos.secondary, borderColor: dmr.glass.border }} />
                                 ))}
                             </Stack>
@@ -947,7 +911,7 @@ export function VisualFoundationsPage() {
                     </Box>
                 </Box>
 
-                {/* 5. FILTROS LOGÍSTICOS Y TIPOGRAFÍA */}
+                {/* 5. FILTROS DE DESPLIEGUE Y TIPOGRAFÍA */}
                 <Box
                     sx={{
                         display: "grid",
@@ -956,20 +920,19 @@ export function VisualFoundationsPage() {
                     }}
                 >
                     <Box sx={(activeTheme) => ({ ...solidPanelStyles(activeTheme), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Logística y Reportes" title="Filtros de Producción" description="Parámetros para la extracción de datos históricos y análisis estadístico." />
+                        <SectionHeading eyebrow="Despliegue y Reportes" title="Filtros de Entorno" description="Parámetros para la extracción de trazas históricas y observabilidad de la inferencia." />
 
                         <Stack sx={{ gap: cssPx(dmr.spacing.lg), mt: cssPx(dmr.spacing.xl) }}>
                             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: cssPx(dmr.spacing.md) }}>
-                                <TextField select label="Filtrar por Célula / Sector" defaultValue="todas" fullWidth>
-                                    <MenuItem value="todas">Todas las áreas</MenuItem>
-                                    <MenuItem value="desbaste">Sector A (Desbaste)</MenuItem>
-                                    <MenuItem value="acabado">Sector B (Acabado)</MenuItem>
-                                    <MenuItem value="calidad">Metrología (QA)</MenuItem>
+                                <TextField select label="Filtrar por Entorno de Despliegue" defaultValue="produccion" fullWidth>
+                                    <MenuItem value="produccion">Producción</MenuItem>
+                                    <MenuItem value="staging">Staging</MenuItem>
+                                    <MenuItem value="edge">Local Edge</MenuItem>
                                 </TextField>
-                                <TextField select label="Turno de Producción" defaultValue="matutino" fullWidth>
-                                    <MenuItem value="matutino">Turno Matutino (06:00 - 14:00)</MenuItem>
-                                    <MenuItem value="vespertino">Turno Vespertino (14:00 - 22:00)</MenuItem>
-                                    <MenuItem value="nocturno">Turno Nocturno (22:00 - 06:00)</MenuItem>
+                                <TextField select label="Ventana de Análisis" defaultValue="1h" fullWidth>
+                                    <MenuItem value="15m">Últimos 15 minutos</MenuItem>
+                                    <MenuItem value="1h">Última hora</MenuItem>
+                                    <MenuItem value="24h">Últimas 24 horas</MenuItem>
                                 </TextField>
                             </Box>
                             <Stack direction="row" useFlexGap sx={{ gap: cssPx(dmr.spacing.sm), flexWrap: "wrap" }}>
@@ -981,7 +944,7 @@ export function VisualFoundationsPage() {
                                         borderColor: activeTheme.dmr.secondary.default,
                                     })}
                                 >
-                                    Exportar Reporte CSV
+                                    Exportar Trazas CSV
                                 </Button>
                             </Stack>
                         </Stack>
@@ -1004,12 +967,12 @@ export function VisualFoundationsPage() {
                     </Box>
 
                     <Box sx={(activeTheme) => ({ ...glassPanelStyles(activeTheme, activeTheme.dmr.primary.subtle), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Lectura Técnica" title="Precisión Numérica" description="Fuentes monoespaciadas para garantizar la lectura correcta de la estadística descriptiva e índices de calidad (Cpk/Ppk)." />
+                        <SectionHeading eyebrow="Lectura Técnica" title="Precisión Numérica" description="Fuentes monoespaciadas para la lectura correcta de métricas de latencia y rendimiento (p95, t/s)." />
                         <Stack sx={{ gap: cssPx(dmr.spacing.lg), mt: cssPx(dmr.spacing.xl) }}>
                             {magnitudesNumericas.map((magnitude) => (
                                 <Box key={magnitude}>
-                                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>{magnitude} (Estadística)</Typography>
-                                    <Typography sx={dmr.typography.numeric[magnitude]}>Cpk 1.332 ±0.01</Typography>
+                                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>{magnitude} (Telemetría)</Typography>
+                                    <Typography sx={dmr.typography.numeric[magnitude]}>p95 385ms</Typography>
                                 </Box>
                             ))}
                         </Stack>
@@ -1018,7 +981,7 @@ export function VisualFoundationsPage() {
 
                 {/* FOOTER */}
                 <Box component="footer" sx={{ display: "flex", justifyContent: "space-between", py: cssPx(dmr.spacing.md), borderTop: `1px solid ${dmr.borders.subtle}` }}>
-                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>Electric Tech Dashboard · Analytics & Logistics UI</Typography>
+                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>Apex Design System · AI Ops Foundations</Typography>
                 </Box>
             </Stack>
         </Box>
