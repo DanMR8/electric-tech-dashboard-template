@@ -1,8 +1,10 @@
 import {
-    ArrowsClockwiseIcon,
-    GaugeIcon,
-    ProhibitIcon,
-    TimerIcon,
+    ChatCircle,
+    Clock,
+    ShoppingCart,
+    Target,
+    TrendUp,
+    WarningCircle,
 } from "@phosphor-icons/react";
 import {
     Box,
@@ -20,7 +22,6 @@ import {
     TableHead,
     TableRow,
     TextField,
-    // Tooltip,
     Typography,
     useTheme,
 } from "@mui/material";
@@ -45,11 +46,11 @@ const magnitudesNumericas = ["md", "xl", "3xl", "5xl"] as const;
 // glassPanelStyles y solidPanelStyles viven en src/shared/styles/superficies.ts
 // (precedente de estandarización no formalizado).
 function SectionHeading({
-                            eyebrow,
-                            title,
-                            description,
-                            action,
-                        }: {
+    eyebrow,
+    title,
+    description,
+    action,
+}: {
     eyebrow: string;
     title: string;
     description?: string;
@@ -105,9 +106,9 @@ function SectionHeading({
 }
 
 function Sparkline({
-                       points,
-                       color,
-                   }: {
+    points,
+    color,
+}: {
     points: readonly number[];
     color: string;
 }) {
@@ -152,15 +153,15 @@ function Sparkline({
 }
 
 function MetricCard({
-                        label,
-                        value,
-                        meta,
-                        glyph,
-                        accent,
-                        softAccent,
-                        valueColor,
-                        points,
-                    }: {
+    label,
+    value,
+    meta,
+    glyph,
+    accent,
+    softAccent,
+    valueColor,
+    points,
+}: {
     label: string;
     value: string;
     meta: string;
@@ -252,7 +253,7 @@ function MetricCard({
     );
 }
 
-function GraficaLatenciaInferencia() {
+function GraficaTiempoRespuesta() {
     const containerRef = useRef<HTMLDivElement>(null);
     const theme = useTheme();
 
@@ -358,7 +359,7 @@ function GraficaLatenciaInferencia() {
             },
             series: [
                 {
-                    name: "Latencia p95 Histórica",
+                    name: "Tiempo Medio de Respuesta",
                     type: "line",
                     smooth: 0.35, // Suavizado orgánico para telemetría
                     showSymbol: false,
@@ -440,7 +441,7 @@ function GraficaLatenciaInferencia() {
         <Box
             ref={containerRef}
             role="img"
-            aria-label="Monitoreo de latencia de generación (TTFT) frente al SLA máximo permitido"
+            aria-label="Tiempo medio de respuesta del soporte frente al SLA máximo permitido"
             sx={{
                 width: "100%",
                 // Altura explícita escalonada para asegurar la visibilidad perfecta en móviles
@@ -454,7 +455,527 @@ function GraficaLatenciaInferencia() {
     );
 }
 
-// 3. VISTA PRINCIPAL: DASHBOARD DE OPERACIONES IA
+/* --------------------------- Embudo: Conversión --------------------------- */
+
+function GraficaEmbudoConversion() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const theme = useTheme();
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const dmr = theme.dmr;
+
+        let chart = echarts.getInstanceByDom(container);
+        if (chart) {
+            chart.dispose();
+        }
+
+        chart = echarts.init(container, crearTemaEcharts(dmr), {
+            renderer: "svg",
+        });
+
+        // Escala de conversión: cada etapa expresa porcentaje de las visitas totales.
+        const datos = [
+            { value: 100, name: "Visitas Totales" },
+            { value: 75, name: "Interacción con Bot" },
+            { value: 50, name: "Recomendación IA" },
+            { value: 35, name: "Checkout Asistido" },
+            { value: 20, name: "Venta Cerrada" },
+        ].map((etapa, indice) => ({
+            ...etapa,
+            itemStyle: {
+                color: dmr.charts.categorical[indice % dmr.charts.categorical.length],
+            },
+        }));
+
+        chart.setOption({
+            animationDuration: dmr.motion.duration.normal,
+            animationEasing: "cubicOut",
+
+            tooltip: {
+                trigger: "item",
+                backgroundColor: dmr.glass.background,
+                borderColor: dmr.borders.subtle,
+                padding: [dmr.spacing.sm, dmr.spacing.md],
+                textStyle: {
+                    color: dmr.textos.primary,
+                    fontFamily: dmr.typography.fontFamily.base,
+                    fontSize: dmr.medidas.textoCanvas,
+                },
+                extraCssText: [
+                    `backdrop-filter: blur(${dmr.glass.blur}) saturate(${dmr.glass.saturate})`,
+                    `box-shadow: ${dmr.elevation.floating}`,
+                    `border-radius: ${dmr.radius.sm}px`,
+                ].join(";"),
+                formatter: (params: unknown) => {
+                    const etapa = params as { name?: string; value?: number };
+                    if (typeof etapa.value === "number") {
+                        return `${etapa.name}<br/><b>${etapa.value} sesiones</b> · ${etapa.value}% del total`;
+                    }
+                    return etapa.name ?? "";
+                },
+            },
+
+            series: [
+                {
+                    type: "funnel" as const,
+                    top: dmr.spacing.lg,
+                    bottom: dmr.spacing.lg,
+                    left: dmr.spacing.sm,
+                    right: dmr.spacing.sm,
+                    minSize: "15%",
+                    maxSize: "100%",
+                    sort: "descending",
+                    gap: dmr.spacing.xs,
+                    label: {
+                        position: "inside",
+                        color: "#fff",
+                        fontWeight: 600,
+                        fontFamily: dmr.typography.fontFamily.base,
+                        formatter: "{c} · {b}",
+                    },
+                    itemStyle: {
+                        borderColor: dmr.superficies.card,
+                        borderWidth: 2,
+                    },
+                    emphasis: {
+                        focus: "self" as const,
+                        itemStyle: {
+                            borderColor: dmr.textos.primary,
+                            borderWidth: 2,
+                            shadowBlur: dmr.medidas.neones.suave,
+                            shadowColor: dmr.primary.subtle,
+                        },
+                    },
+                    data: datos,
+                },
+            ],
+        });
+
+        const resizeObserver = new ResizeObserver(() => {
+            window.requestAnimationFrame(() => {
+                chart?.resize();
+            });
+        });
+
+        resizeObserver.observe(container);
+
+        return () => {
+            resizeObserver.disconnect();
+            chart?.dispose();
+        };
+    }, [theme]);
+
+    return (
+        <Box
+            ref={containerRef}
+            role="img"
+            aria-label="Embudo de conversión: de las visitas totales a la venta cerrada, con la interacción del bot y las recomendaciones de la IA en cada etapa"
+            sx={{
+                width: "100%",
+                minHeight: { xs: 360, md: 420 },
+            }}
+        />
+    );
+}
+
+/* --------------------- Heatmap: Densidad por Horario --------------------- */
+
+function GraficaHeatmapHorarios() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const theme = useTheme();
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const dmr = theme.dmr;
+
+        let chart = echarts.getInstanceByDom(container);
+        if (chart) {
+            chart.dispose();
+        }
+
+        chart = echarts.init(container, crearTemaEcharts(dmr), {
+            renderer: "svg",
+        });
+
+        // Días de la semana y horas del día para la malla del heatmap.
+        const dias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+        const horas = Array.from({ length: 24 }, (_, hora) => `${String(hora).padStart(2, "0")}:00`);
+
+        // Mock determinista: picos laborales (lunes a viernes) entre 10h y 18h
+        // que alcanzan el tope de la escala (100), actividad moderada diurna y
+        // mínima nocturna para aprovechar todo el gradiente del visualMap.
+        const datos: Array<[number, number, number]> = [];
+        dias.forEach((_, indiceDia) => {
+            horas.forEach((_, hora) => {
+                const picoLaboral = indiceDia < 5 && hora >= 10 && hora <= 18;
+                const activoDiurno = hora >= 8 && hora <= 21;
+                const valor = picoLaboral
+                    ? 68 + ((hora * 3 + indiceDia * 2) % 33)
+                    : activoDiurno
+                      ? 22 + ((hora + indiceDia) % 18)
+                      : 3 + ((hora + indiceDia) % 9);
+                datos.push([hora, indiceDia, valor]);
+            });
+        });
+
+        chart.setOption({
+            animationDuration: dmr.motion.duration.normal,
+            animationEasing: "cubicOut",
+
+            tooltip: {
+                position: "top",
+                backgroundColor: dmr.glass.background,
+                borderColor: dmr.borders.subtle,
+                padding: [dmr.spacing.sm, dmr.spacing.md],
+                textStyle: {
+                    color: dmr.textos.primary,
+                    fontFamily: dmr.typography.fontFamily.base,
+                    fontSize: dmr.medidas.textoCanvas,
+                },
+                extraCssText: [
+                    `backdrop-filter: blur(${dmr.glass.blur}) saturate(${dmr.glass.saturate})`,
+                    `box-shadow: ${dmr.elevation.floating}`,
+                    `border-radius: ${dmr.radius.sm}px`,
+                ].join(";"),
+                formatter: (params: unknown) => {
+                    const punto = params as { value?: [number, number, number] };
+                    const [hora, dia, valor] = punto.value ?? [0, 0, 0];
+                    return `${dias[dia]}, ${horas[hora]}<br/><b>${valor}</b> interacciones`;
+                },
+            },
+
+            grid: {
+                left: dmr.spacing.sm,
+                right: dmr.spacing.md,
+                top: dmr.spacing["4xl"],
+                bottom: 80,
+                containLabel: true,
+            },
+
+            xAxis: {
+                type: "category",
+                data: horas,
+                splitArea: { show: true },
+                axisTick: { show: false },
+                axisLine: { lineStyle: { color: dmr.borders.subtle } },
+                axisLabel: {
+                    color: dmr.textos.tertiary,
+                    interval: 2, // Muestra una etiqueta cada 2 horas para no saturar
+                },
+            },
+
+            yAxis: {
+                type: "category",
+                data: dias,
+                inverse: true,
+                splitArea: { show: true },
+                axisTick: { show: false },
+                axisLine: { lineStyle: { color: dmr.borders.subtle } },
+                axisLabel: { color: dmr.textos.tertiary },
+            },
+
+            // Visual map visible y calculable: escala 0 → primary.default (picos)
+            // pasando por la superficie interactiva y el tono sutil del primario.
+            visualMap: {
+                type: "continuous",
+                min: 0,
+                max: 100,
+                calculable: true,
+                orient: "horizontal",
+                left: "center",
+                bottom: 0,
+                itemWidth: 12,
+                itemHeight: 140,
+                inRange: {
+                    color: [dmr.superficies.interactive, dmr.primary.subtle, dmr.primary.default],
+                },
+                textStyle: {
+                    color: dmr.textos.secondary,
+                    fontFamily: dmr.typography.fontFamily.base,
+                    fontSize: dmr.typography.xs.fontSize,
+                },
+            },
+
+            series: [
+                {
+                    name: "Interacciones",
+                    type: "heatmap" as const,
+                    data: datos,
+                    itemStyle: {
+                        borderRadius: cssPx(dmr.radius.xs),
+                        borderWidth: dmr.medidas.trazos.fino,
+                        borderColor: dmr.superficies.card,
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: dmr.medidas.neones.suave,
+                            shadowColor: dmr.primary.subtle,
+                            borderColor: dmr.primary.default,
+                        },
+                    },
+                },
+            ],
+        });
+
+        const resizeObserver = new ResizeObserver(() => {
+            window.requestAnimationFrame(() => {
+                chart?.resize();
+            });
+        });
+
+        resizeObserver.observe(container);
+
+        return () => {
+            resizeObserver.disconnect();
+            chart?.dispose();
+        };
+    }, [theme]);
+
+    return (
+        <Box
+            ref={containerRef}
+            role="img"
+            aria-label="Densidad de interacciones del asistente por hora del día y día de la semana"
+            sx={{
+                width: "100%",
+                minHeight: { xs: 360, md: 420 },
+            }}
+        />
+    );
+}
+
+/* ----------------------- Radar: Perfil de Capacidades ----------------------- */
+
+function GraficaRadarPerfil() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const theme = useTheme();
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const dmr = theme.dmr;
+
+        let chart = echarts.getInstanceByDom(container);
+        if (chart) {
+            chart.dispose();
+        }
+
+        chart = echarts.init(container, crearTemaEcharts(dmr), {
+            renderer: "svg",
+        });
+
+        chart.setOption({
+            animationDuration: dmr.motion.duration.normal,
+            animationEasing: "cubicOut",
+
+            tooltip: {
+                trigger: "item",
+                backgroundColor: dmr.glass.background,
+                borderColor: dmr.borders.subtle,
+                padding: [dmr.spacing.sm, dmr.spacing.md],
+                textStyle: {
+                    color: dmr.textos.primary,
+                    fontFamily: dmr.typography.fontFamily.base,
+                    fontSize: dmr.medidas.textoCanvas,
+                },
+                extraCssText: [
+                    `backdrop-filter: blur(${dmr.glass.blur}) saturate(${dmr.glass.saturate})`,
+                    `box-shadow: ${dmr.elevation.floating}`,
+                    `border-radius: ${dmr.radius.sm}px`,
+                ].join(";"),
+            },
+
+            legend: {
+                bottom: 0,
+                icon: "circle",
+                itemWidth: dmr.medidas.serieLinea.leyendaIcono,
+                itemHeight: dmr.medidas.serieLinea.leyendaIcono,
+                itemGap: dmr.medidas.serieLinea.leyendaGap,
+                textStyle: {
+                    color: dmr.textos.secondary,
+                    fontFamily: dmr.typography.fontFamily.base,
+                    fontSize: dmr.medidas.textoCanvas,
+                },
+            },
+
+            radar: {
+                indicator: [
+                    { name: "Resolución", max: 100 },
+                    { name: "Empatía", max: 100 },
+                    { name: "Velocidad", max: 100 },
+                    { name: "Precisión", max: 100 },
+                    { name: "Retención", max: 100 },
+                ],
+                radius: "66%",
+                splitNumber: 4,
+                axisName: {
+                    color: dmr.textos.tertiary,
+                    fontFamily: dmr.typography.fontFamily.base,
+                    fontSize: dmr.medidas.textoCanvas,
+                },
+                splitLine: {
+                    lineStyle: { color: dmr.borders.subtle },
+                },
+                splitArea: {
+                    areaStyle: { color: [dmr.superficies.interactive, "transparent"] },
+                },
+                axisLine: {
+                    lineStyle: { color: dmr.borders.subtle },
+                },
+            },
+
+            series: [
+                {
+                    name: "Asistente IA (GPT-4)",
+                    type: "radar" as const,
+                    symbolSize: dmr.medidas.serieLinea.simbolo,
+                    data: [
+                        {
+                            name: "Asistente IA (GPT-4)",
+                            value: [92, 82, 96, 95, 88],
+                        },
+                    ],
+                    lineStyle: {
+                        color: dmr.primary.default,
+                        width: dmr.medidas.trazos.medio,
+                    },
+                    itemStyle: {
+                        color: dmr.primary.default,
+                    },
+                    areaStyle: {
+                        color: dmr.primary.subtle,
+                        opacity: 0.7,
+                    },
+                },
+                {
+                    name: "Soporte Humano Promedio",
+                    type: "radar" as const,
+                    symbolSize: dmr.medidas.serieLinea.simbolo,
+                    data: [
+                        {
+                            name: "Soporte Humano Promedio",
+                            value: [85, 93, 58, 78, 71],
+                        },
+                    ],
+                    lineStyle: {
+                        color: dmr.estados.ai.default,
+                        width: dmr.medidas.trazos.medio,
+                        type: "dashed",
+                    },
+                    itemStyle: {
+                        color: dmr.estados.ai.default,
+                    },
+                    areaStyle: {
+                        color: dmr.estados.ai.subtle,
+                        opacity: 0.6,
+                    },
+                },
+            ],
+        });
+
+        const resizeObserver = new ResizeObserver(() => {
+            window.requestAnimationFrame(() => {
+                chart?.resize();
+            });
+        });
+
+        resizeObserver.observe(container);
+
+        return () => {
+            resizeObserver.disconnect();
+            chart?.dispose();
+        };
+    }, [theme]);
+
+    return (
+        <Box
+            ref={containerRef}
+            role="img"
+            aria-label="Radar que compara las capacidades del asistente IA frente al soporte humano promedio"
+            sx={{
+                width: "100%",
+                minHeight: { xs: 320, md: 380 },
+            }}
+        />
+    );
+}
+
+/* ------------------------- Timeline: Auditoría de Ticket ------------------------- */
+
+type EventoTicket = {
+    titulo: string;
+    detalle: string;
+    color: string;
+};
+
+function TimelineActividad({ eventos }: { eventos: readonly EventoTicket[] }) {
+    const dmr = useTheme().dmr;
+
+    return (
+        <Stack sx={{ gap: 0 }}>
+            {eventos.map((evento, indice) => {
+                const ultimo = indice === eventos.length - 1;
+                return (
+                    <Stack
+                        key={evento.titulo}
+                        direction="row"
+                        sx={{ gap: cssPx(dmr.spacing.md), alignItems: "stretch" }}
+                    >
+                        {/* Riel: nodo + conector vertical. */}
+                        <Stack sx={{ alignItems: "center", flexShrink: 0, width: cssPx(dmr.spacing.lg) }}>
+                            <Box
+                                sx={{
+                                    width: 12,
+                                    height: 12,
+                                    flexShrink: 0,
+                                    borderRadius: cssPx(dmr.radius.pill),
+                                    bgcolor: evento.color,
+                                    border: `2px solid ${evento.color}`,
+                                    boxShadow: `0 0 0 4px ${evento.color}26`,
+                                }}
+                            />
+                            {!ultimo ? (
+                                <Box
+                                    sx={{
+                                        width: 2,
+                                        flex: 1,
+                                        minHeight: cssPx(dmr.spacing["2xl"]),
+                                        my: cssPx(dmr.spacing.xs),
+                                        bgcolor: dmr.borders.subtle,
+                                    }}
+                                />
+                            ) : null}
+                        </Stack>
+
+                        {/* Contenido del evento. */}
+                        <Box sx={{ pb: ultimo ? 0 : cssPx(dmr.spacing.xl), minWidth: 0 }}>
+                            <Typography sx={{ ...dmr.typography.sm, fontWeight: 600, color: dmr.textos.primary }}>
+                                {evento.titulo}
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    ...dmr.typography.xs,
+                                    color: dmr.textos.tertiary,
+                                    mt: cssPx(dmr.spacing.xs),
+                                }}
+                            >
+                                {evento.detalle}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                );
+            })}
+        </Stack>
+    );
+}
+
+/* 3. VISTA PRINCIPAL: KITCHEN SINK DE E-COMMERCE & AI */
 export function VisualFoundationsPage() {
     const theme = useTheme();
     const dmr = theme.dmr;
@@ -480,57 +1001,82 @@ export function VisualFoundationsPage() {
         ["Analysis", dmr.estados.ai.default, dmr.estados.ai.subtle],
     ] as const;
 
-    // Métricas de operación del gateway de inferencia
-    const metricasSistema = [
+    // Métricas del negocio: ventas y soporte asistidos por IA.
+    const metricasComerciales = [
         {
-            label: "Cache Hit Rate",
-            value: "84.2%",
-            meta: "Promedio de aciertos de la última hora",
-            glyph: <GaugeIcon size={20} weight="fill" />,
+            label: "Ventas Asistidas",
+            value: "$48.2k",
+            meta: "+18.6% vs. semana anterior",
+            glyph: <ShoppingCart size={20} weight="fill" />,
             accent: dmr.primary.default,
             softAccent: dmr.primary.subtle,
             valueColor: dmr.textos.primary,
-            points: [78, 79, 81, 80, 83, 85, 84, 82, 84, 85, 84, 84],
+            points: [20, 24, 22, 30, 28, 34, 38, 36, 42, 40, 46, 48],
         },
         {
-            label: "Peticiones Procesadas",
-            value: "4,250",
-            meta: "Peticiones atendidas por el gateway (24h)",
-            glyph: <ArrowsClockwiseIcon size={20} weight="fill" />,
+            label: "CSAT (Soporte)",
+            value: "4.8 / 5",
+            meta: "Calificación promedio del agente",
+            glyph: <ChatCircle size={20} weight="fill" />,
             accent: dmr.estados.success.default,
             softAccent: dmr.estados.success.subtle,
             valueColor: dmr.estados.success.foreground,
-            points: [30, 45, 42, 60, 55, 70, 68, 80, 75, 85, 82, 90],
+            points: [4.2, 4.4, 4.4, 4.6, 4.5, 4.7, 4.7, 4.8, 4.7, 4.8, 4.8, 4.8],
         },
         {
-            label: "Latencia Media (p50)",
-            value: "240 ms",
-            meta: "Percentil 50 del tiempo a primer token",
-            glyph: <TimerIcon size={20} weight="fill" />,
-            accent: dmr.estados.warning.default,
-            softAccent: dmr.estados.warning.subtle,
-            valueColor: dmr.estados.warning.foreground,
-            points: [182, 190, 186, 212, 240, 226, 205, 196, 210, 204, 192, 188],
+            label: "Tasa de Retención",
+            value: "87.4%",
+            meta: "Clientes que vuelven a comprar",
+            glyph: <TrendUp size={20} weight="fill" />,
+            accent: dmr.secondary.default,
+            softAccent: dmr.secondary.subtle,
+            valueColor: dmr.secondary.foreground,
+            points: [80, 81, 84, 83, 85, 86, 85, 87, 86, 87, 87, 87],
         },
         {
-            label: "Tasa de Rate Limits (HTTP 429)",
-            value: "0.85%",
-            meta: "Umbral objetivo: <1.0% de peticiones rechazadas",
-            glyph: <ProhibitIcon size={20} weight="fill" />,
+            label: "Escalamientos a Humano",
+            value: "3.2%",
+            meta: "Sesiones escaladas en el día",
+            glyph: <WarningCircle size={20} weight="fill" />,
             accent: dmr.estados.error.default,
             softAccent: dmr.estados.error.subtle,
             valueColor: dmr.estados.error.foreground,
-            points: [1.2, 1.1, 1.3, 0.9, 0.8, 1.0, 1.4, 0.9, 0.8, 0.8, 0.8, 0.8],
+            points: [4.0, 3.8, 4.1, 3.6, 3.4, 3.6, 3.5, 3.2, 3.4, 3.2, 3.3, 3.2],
         },
     ] as const;
 
-    const nodosCluster = [
-        ["GPU Node 01 (Llama-3)", "Activo", "GPU Local (CUDA)", "14 GB", "98", dmr.estados.success.foreground],
-        ["GPU Node 02 (Mistral-7B)", "Mantenimiento", "GPU Local (CUDA)", "---", "64", dmr.estados.info.foreground],
-        ["CPU Cluster (Embeddings)", "Activo", "CPU Cluster", "---", "85", dmr.estados.success.foreground],
-        ["Qdrant Vector DB", "Revisión", "Vector DB (Docker)", "8 GB", "72", dmr.estados.warning.foreground],
-        ["OpenAI (Fallback)", "Fuera Línea", "API Remota", "---", "0", dmr.estados.error.foreground],
+    // Equipo de atención: agentes automáticos y humanos.
+    const agentesEquipo = [
+        ["Aura · Bot Web", "Activo", "Web · Automático", "4.8", 92, dmr.estados.success.foreground],
+        ["Iris · Bot Instagram", "Mantenimiento", "Instagram DM · Automático", "4.6", 64, dmr.estados.info.foreground],
+        ["Tier-1 Soporte Humano", "Activo", "Chat · Agente humano", "4.9", 85, dmr.estados.success.foreground],
+        ["Supervisor de Turno", "Revisión", "Equipo · En vivo", "4.7", 72, dmr.estados.warning.foreground],
+        ["Fallback Offline", "Fuera Línea", "Sin canal asignado", "—", 0, dmr.estados.error.foreground],
     ] as const;
+
+    // Timeline de ejemplo para la auditoría de una devolución asistida.
+    const eventosTicket: readonly EventoTicket[] = [
+        {
+            titulo: "Chat iniciado vía WhatsApp",
+            detalle: "Cliente ID #4821 · Intención general · 09:12",
+            color: dmr.textos.tertiary,
+        },
+        {
+            titulo: "Bot IA clasifica intención: Devolución",
+            detalle: "Confianza del 96% · Asistente Aura · 09:14",
+            color: dmr.primary.default,
+        },
+        {
+            titulo: "Validación de política de reembolso exitosa",
+            detalle: "Ticket #R-8821 aprobado · Garantía 30 días · 09:31",
+            color: dmr.estados.success.default,
+        },
+        {
+            titulo: "Escalado a humano para cierre financiero",
+            detalle: "Derivado a Mariana R. (Finanzas) · 10:47",
+            color: dmr.estados.warning.default,
+        },
+    ];
 
     return (
         <Box
@@ -605,7 +1151,7 @@ export function VisualFoundationsPage() {
                                 }}
                             >
                                 <Chip
-                                    label="APEX DESIGN SYSTEM"
+                                    label="UI KIT & ANALYTICS"
                                     size="small"
                                     sx={{
                                         color: dmr.primary.default,
@@ -613,8 +1159,8 @@ export function VisualFoundationsPage() {
                                         border: `1px solid ${dmr.primary.default}`,
                                     }}
                                 />
-                                <Chip label="AI OPS FOUNDATIONS" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />
-                                <Chip label="LLM TELEMETRY" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />
+                                <Chip label="E-COMMERCE & AI" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />
+                                <Chip label="SALES + SUPPORT" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />
                             </Stack>
 
                             <Typography
@@ -628,7 +1174,7 @@ export function VisualFoundationsPage() {
                                     color: "transparent",
                                 }}
                             >
-                                Base visual para el monitoreo de clústeres de inferencia y telemetría de LLMs.
+                                UI Kit &amp; Componentes Analíticos · E-commerce &amp; AI UI Foundations
                             </Typography>
                             <Typography
                                 sx={{
@@ -638,7 +1184,9 @@ export function VisualFoundationsPage() {
                                     mt: cssPx(dmr.spacing.md),
                                 }}
                             >
-                                Panel de observación para operaciones de IA. Analiza la latencia de inferencia, el enrutamiento del tráfico y la salud de los nodos de cómputo de forma segura y centralizada.
+                                Vitrina integral de operaciones comerciales e inteligencia artificial: mide ventas
+                                asistidas, tiempo de respuesta del soporte y el rendimiento de tus agentes en un
+                                kit visual integrado.
                             </Typography>
                         </Box>
 
@@ -679,9 +1227,9 @@ export function VisualFoundationsPage() {
 
                             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: cssPx(dmr.spacing.sm) }}>
                                 {[
-                                    ["12", "Nodos"],
-                                    ["800ms", "SLA p95"],
-                                    ["24h", "Ventana"],
+                                    ["12.4k", "Clientes"],
+                                    ["38s", "Resp. Media"],
+                                    ["4.8", "CSAT"],
                                 ].map(([value, label]) => (
                                     <Box
                                         key={label}
@@ -702,7 +1250,7 @@ export function VisualFoundationsPage() {
                     </Stack>
                 </Box>
 
-                {/* 2. GRÁFICA DE LATENCIA Y DISTRIBUCIÓN DE TRÁFICO */}
+                {/* 2. TIEMPO DE RESPUESTA Y DISTRIBUCIÓN DE CANALES */}
                 <Box
                     sx={{
                         display: "grid",
@@ -717,9 +1265,9 @@ export function VisualFoundationsPage() {
                     <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
                         <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) } }}>
                             <SectionHeading
-                                eyebrow="Latencia de Inferencia"
-                                title="Latencia de Generación (TTFT)"
-                                description="Revisión analítica de la latencia recolectada respecto al SLA máximo permitido del gateway."
+                                eyebrow="Soporte en Vivo"
+                                title="Tiempo de Respuesta del Asistente"
+                                description="Revisión analítica del tiempo medio de respuesta del soporte frente al SLA máximo permitido (800 ms)."
                                 action={
                                     <Box sx={{ display: "flex", gap: cssPx(dmr.spacing.xs), p: cssPx(dmr.spacing.xs), borderRadius: cssPx(dmr.radius.sm), bgcolor: dmr.superficies.interactive }}>
                                         {["15m", "1h", "24h", "7d"].map((period) => (
@@ -731,13 +1279,13 @@ export function VisualFoundationsPage() {
                                 }
                             />
                             <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
-                                <GraficaLatenciaInferencia />
+                                <GraficaTiempoRespuesta />
                             </Box>
                         </Box>
                     </Box>
 
                     <Box sx={(activeTheme) => ({ ...solidPanelStyles(activeTheme), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Enrutamiento" title="Distribución de Tráfico de Inferencia" description="Proporción del tráfico enrutado por tipo de cómputo." />
+                        <SectionHeading eyebrow="Canales" title="Distribución de Canales" description="Proporción de interacciones atendidas por cada canal de venta y soporte." />
                         <Box sx={{ display: "flex", flexDirection: "column", gap: cssPx(dmr.spacing.xl), mt: cssPx(dmr.spacing.xl), alignItems: "center" }}>
                             <Box
                                 sx={{
@@ -772,10 +1320,10 @@ export function VisualFoundationsPage() {
 
                             <Stack sx={{ gap: cssPx(dmr.spacing.md), width: "100%" }}>
                                 {[
-                                    ["Modelos Locales (GPU)", "40%", dmr.primary.default],
-                                    ["Modelos CPU", "25%", dmr.secondary.default],
-                                    ["RAG / Embeddings", "20%", dmr.estados.warning.default],
-                                    ["OpenAI (Fallback)", "15%", dmr.estados.success.default],
+                                    ["Web", "40%", dmr.primary.default],
+                                    ["WhatsApp", "25%", dmr.secondary.default],
+                                    ["Instagram DM", "20%", dmr.estados.warning.default],
+                                    ["Soporte Humano", "15%", dmr.estados.success.default],
                                 ].map(([label, value, color]) => (
                                     <Box key={label}>
                                         <Stack direction="row" sx={{ justifyContent: "space-between", mb: cssPx(dmr.spacing.xs) }}>
@@ -790,7 +1338,46 @@ export function VisualFoundationsPage() {
                     </Box>
                 </Box>
 
-                {/* 3. MÉTRICAS DE OPERACIÓN */}
+                {/* 2b. EMBUDO DE CONVERSIÓN + DENSIDAD DE INTERACCIONES POR HORARIO */}
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                            xs: "minmax(0, 1fr)",
+                            xl: "minmax(320px, 1fr) minmax(0, 2fr)",
+                        },
+                        gap: cssPx(dmr.spacing.xl),
+                        alignItems: "stretch",
+                    }}
+                >
+                    <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
+                        <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) } }}>
+                            <SectionHeading
+                                eyebrow="Conversión"
+                                title="Embudo de Conversión"
+                                description="Recorrido del cliente desde la visita hasta la venta cerrada, con la aportación del asistente IA en cada etapa."
+                            />
+                            <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
+                                <GraficaEmbudoConversion />
+                            </Box>
+                        </Box>
+                    </Box>
+
+                    <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
+                        <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) } }}>
+                            <SectionHeading
+                                eyebrow="Volumen por Horario"
+                                title="Densidad de Interacciones por Horario"
+                                description="Mapa de calor de la demanda del asistente: picos laborales entre 10h y 18h con demanda mínima nocturna."
+                            />
+                            <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
+                                <GraficaHeatmapHorarios />
+                            </Box>
+                        </Box>
+                    </Box>
+                </Box>
+
+                {/* 3. MÉTRICAS DE OPERACIÓN COMERCIAL */}
                 <Box
                     sx={{
                         display: "grid",
@@ -802,12 +1389,12 @@ export function VisualFoundationsPage() {
                         gap: cssPx(dmr.spacing.lg),
                     }}
                 >
-                    {metricasSistema.map((metric) => (
+                    {metricasComerciales.map((metric) => (
                         <MetricCard key={metric.label} {...metric} />
                     ))}
                 </Box>
 
-                {/* 4. TABLA DE NODOS E INFORME IA */}
+                {/* 4. RENDIMIENTO DE AGENTES E INFORME IA */}
                 <Box
                     sx={{
                         display: "grid",
@@ -822,9 +1409,9 @@ export function VisualFoundationsPage() {
                     <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
                         <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) }, pb: cssPx(dmr.spacing.md) }}>
                             <SectionHeading
-                                eyebrow="Registro de Infraestructura"
-                                title="Resumen de Nodos del Clúster"
-                                description="Datos agregados de los nodos del clúster durante el periodo seleccionado."
+                                eyebrow="Equipo de Atención"
+                                title="Rendimiento de Agentes"
+                                description="Datos agregados del desempeño de los agentes automáticos y humanos durante el periodo seleccionado."
                                 action={<Chip label="Última actualización: 14:00" size="small" variant="outlined" sx={{ borderColor: dmr.borders.default }} />}
                             />
                         </Box>
@@ -833,27 +1420,27 @@ export function VisualFoundationsPage() {
                             <Table size="small">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Nodo de Inferencia</TableCell>
-                                        <TableCell>Estado del Nodo</TableCell>
-                                        <TableCell align="right">Backend / Entorno</TableCell>
-                                        <TableCell align="right">VRAM Usada</TableCell>
+                                        <TableCell>Agente</TableCell>
+                                        <TableCell>Estado del Agente</TableCell>
+                                        <TableCell>Canal / Equipo</TableCell>
+                                        <TableCell align="right">CSAT</TableCell>
                                         <TableCell sx={{ minWidth: 120 }}>Uso de Capacidad</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {nodosCluster.map(([nodo, estado, backend, vram, capacidad, color]) => (
-                                        <TableRow key={nodo} hover>
+                                    {agentesEquipo.map(([agente, estado, canal, csat, capacidad, color]) => (
+                                        <TableRow key={agente} hover>
                                             <TableCell>
-                                                <Typography sx={{ ...dmr.typography.sm, fontWeight: 600 }}>{nodo}</Typography>
+                                                <Typography sx={{ ...dmr.typography.sm, fontWeight: 600 }}>{agente}</Typography>
                                             </TableCell>
                                             <TableCell>
                                                 <Chip label={estado} size="small" sx={{ height: dmr.medidas.microChips.chico, fontSize: dmr.typography.micro.fontSize, bgcolor: dmr.superficies.interactive, border: `1px solid ${color}`, color }} />
                                             </TableCell>
-                                            <TableCell align="right" sx={dmr.typography.numeric.sm}>{backend}</TableCell>
-                                            <TableCell align="right" sx={dmr.typography.numeric.sm}>{vram}</TableCell>
+                                            <TableCell sx={dmr.typography.sm}>{canal}</TableCell>
+                                            <TableCell align="right" sx={dmr.typography.numeric.sm}>{csat}</TableCell>
                                             <TableCell>
                                                 <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
-                                                    <LinearProgress variant="determinate" value={Number.parseFloat(capacidad)} sx={{ flex: 1, height: dmr.medidas.barras.media, borderRadius: cssPx(dmr.radius.pill), bgcolor: dmr.superficies.interactive, "& .MuiLinearProgress-bar": { bgcolor: color } }} />
+                                                    <LinearProgress variant="determinate" value={capacidad} sx={{ flex: 1, height: dmr.medidas.barras.media, borderRadius: cssPx(dmr.radius.pill), bgcolor: dmr.superficies.interactive, "& .MuiLinearProgress-bar": { bgcolor: color } }} />
                                                     <Typography sx={dmr.typography.numeric.xs}>{capacidad}%</Typography>
                                                 </Stack>
                                             </TableCell>
@@ -888,22 +1475,22 @@ export function VisualFoundationsPage() {
                                 </Box>
                                 <Box>
                                     <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
-                                        <Typography sx={{ ...dmr.typography.lg, fontWeight: 700 }}>Agente de Operaciones</Typography>
-                                        <Chip label="OBSERVABILITY" size="small" sx={{ height: dmr.medidas.microChips.medio, color: dmr.estados.ai.foreground, bgcolor: dmr.estados.ai.subtle }} />
+                                        <Typography sx={{ ...dmr.typography.lg, fontWeight: 700 }}>Agente Comercial AI</Typography>
+                                        <Chip label="COMMERCE OPS" size="small" sx={{ height: dmr.medidas.microChips.medio, color: dmr.estados.ai.foreground, bgcolor: dmr.estados.ai.subtle }} />
                                     </Stack>
-                                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.secondary }}>Asistente de operaciones de inferencia</Typography>
+                                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.secondary }}>Asistente de ventas y soporte multicanal</Typography>
                                 </Box>
                             </Stack>
 
                             <Box sx={{ p: cssPx(dmr.spacing.lg), borderRadius: cssPx(dmr.radius.md), bgcolor: dmr.superficies.interactive, border: `1px solid ${dmr.borders.default}` }}>
-                                <Typography sx={{ ...dmr.typography.md, fontWeight: 600 }}>Saturación detectada en la memoria KV Cache del Nodo GPU 02.</Typography>
+                                <Typography sx={{ ...dmr.typography.md, fontWeight: 600 }}>Pico de demanda en WhatsApp durante el horario laboral.</Typography>
                                 <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary, mt: cssPx(dmr.spacing.sm) }}>
-                                    Los datos de la última ventana muestran presión creciente en el contexto KV del nodo. Se sugiere incrementar el umbral de fallback a la nube en el próximo pico de tráfico para proteger la latencia p95 del clúster.
+                                    La última ventana muestra alta intención de compra entre las 10h y las 18h. Se sugiere reforzar la cola de soporte humano hacia el cierre del día para mantener el tiempo de respuesta dentro del SLA.
                                 </Typography>
                             </Box>
 
                             <Stack direction="row" useFlexGap sx={{ gap: cssPx(dmr.spacing.sm), flexWrap: "wrap" }}>
-                                {["Ajustar Umbral de Fallback", "Ver Historial del Nodo", "Exportar Trazas"].map((label) => (
+                                {["Revisar Cola de Soporte", "Ver Historial del Ticket", "Exportar Conversaciones"].map((label) => (
                                     <Chip key={label} label={label} variant="outlined" sx={{ color: dmr.textos.secondary, borderColor: dmr.glass.border }} />
                                 ))}
                             </Stack>
@@ -911,7 +1498,82 @@ export function VisualFoundationsPage() {
                     </Box>
                 </Box>
 
-                {/* 5. FILTROS DE DESPLIEGUE Y TIPOGRAFÍA */}
+                {/* 4b. RADAR DE CAPACIDADES + TIMELINE DE TICKET */}
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                            xs: "minmax(0, 1fr)",
+                            xl: "minmax(0, 1.1fr) minmax(0, 0.9fr)",
+                        },
+                        gap: cssPx(dmr.spacing.xl),
+                        alignItems: "stretch",
+                    }}
+                >
+                    <Box
+                        sx={(activeTheme) => ({
+                            ...glassPanelStyles(activeTheme, activeTheme.dmr.primary.subtle),
+                            p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) },
+                        })}
+                    >
+                        <SectionHeading
+                            eyebrow="Perfil de Rendimiento"
+                            title="Radar de Capacidades del Agente"
+                            description="Comparación entre el asistente IA y el soporte humano promedio en las métricas de calidad del negocio."
+                            action={
+                                <Box
+                                    sx={{
+                                        width: dmr.spacing["2xl"],
+                                        height: dmr.spacing["2xl"],
+                                        flex: "0 0 auto",
+                                        display: "grid",
+                                        placeItems: "center",
+                                        borderRadius: cssPx(dmr.radius.pill),
+                                        color: dmr.primary.default,
+                                        bgcolor: dmr.primary.subtle,
+                                        border: `1px solid ${dmr.primary.default}`,
+                                        boxShadow: `0 0 26px ${dmr.primary.subtle}`,
+                                    }}
+                                >
+                                    <Target size={20} weight="fill" aria-hidden="true" />
+                                </Box>
+                            }
+                        />
+                        <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
+                            <GraficaRadarPerfil />
+                        </Box>
+                    </Box>
+
+                    <Box sx={(activeTheme) => ({ ...solidPanelStyles(activeTheme), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
+                        <SectionHeading
+                            eyebrow="Auditoría en Vivo"
+                            title="Timeline del Ticket #R-8821"
+                            description="Seguimiento de una devolución atendida por el bot y escalada a finanzas para el cierre."
+                            action={
+                                <Box
+                                    sx={{
+                                        width: dmr.spacing["2xl"],
+                                        height: dmr.spacing["2xl"],
+                                        flex: "0 0 auto",
+                                        display: "grid",
+                                        placeItems: "center",
+                                        borderRadius: cssPx(dmr.radius.pill),
+                                        color: dmr.textos.secondary,
+                                        bgcolor: dmr.superficies.interactive,
+                                        border: `1px solid ${dmr.borders.default}`,
+                                    }}
+                                >
+                                    <Clock size={20} weight="fill" aria-hidden="true" />
+                                </Box>
+                            }
+                        />
+                        <Box sx={{ mt: cssPx(dmr.spacing.xl) }}>
+                            <TimelineActividad eventos={eventosTicket} />
+                        </Box>
+                    </Box>
+                </Box>
+
+                {/* 5. FILTROS DE OPERACIÓN Y TIPOGRAFÍA */}
                 <Box
                     sx={{
                         display: "grid",
@@ -920,14 +1582,15 @@ export function VisualFoundationsPage() {
                     }}
                 >
                     <Box sx={(activeTheme) => ({ ...solidPanelStyles(activeTheme), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Despliegue y Reportes" title="Filtros de Entorno" description="Parámetros para la extracción de trazas históricas y observabilidad de la inferencia." />
+                        <SectionHeading eyebrow="Despliegue y Reportes" title="Filtros de Operación Comercial" description="Parámetros para el análisis del desempeño del asistente en ventas y soporte." />
 
                         <Stack sx={{ gap: cssPx(dmr.spacing.lg), mt: cssPx(dmr.spacing.xl) }}>
                             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: cssPx(dmr.spacing.md) }}>
-                                <TextField select label="Filtrar por Entorno de Despliegue" defaultValue="produccion" fullWidth>
-                                    <MenuItem value="produccion">Producción</MenuItem>
-                                    <MenuItem value="staging">Staging</MenuItem>
-                                    <MenuItem value="edge">Local Edge</MenuItem>
+                                <TextField select label="Canal de Interacción" defaultValue="whatsapp" fullWidth>
+                                    <MenuItem value="whatsapp">WhatsApp</MenuItem>
+                                    <MenuItem value="web">Web</MenuItem>
+                                    <MenuItem value="instagram">Instagram DM</MenuItem>
+                                    <MenuItem value="humano">Soporte Humano</MenuItem>
                                 </TextField>
                                 <TextField select label="Ventana de Análisis" defaultValue="1h" fullWidth>
                                     <MenuItem value="15m">Últimos 15 minutos</MenuItem>
@@ -944,7 +1607,7 @@ export function VisualFoundationsPage() {
                                         borderColor: activeTheme.dmr.secondary.default,
                                     })}
                                 >
-                                    Exportar Trazas CSV
+                                    Exportar Sesiones CSV
                                 </Button>
                             </Stack>
                         </Stack>
@@ -967,12 +1630,12 @@ export function VisualFoundationsPage() {
                     </Box>
 
                     <Box sx={(activeTheme) => ({ ...glassPanelStyles(activeTheme, activeTheme.dmr.primary.subtle), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Lectura Técnica" title="Precisión Numérica" description="Fuentes monoespaciadas para la lectura correcta de métricas de latencia y rendimiento (p95, t/s)." />
+                        <SectionHeading eyebrow="Lectura Técnica" title="Precisión Numérica" description="Fuentes monoespaciadas para la lectura correcta de métricas comerciales (CSAT, retención, escalamientos)." />
                         <Stack sx={{ gap: cssPx(dmr.spacing.lg), mt: cssPx(dmr.spacing.xl) }}>
                             {magnitudesNumericas.map((magnitude) => (
                                 <Box key={magnitude}>
-                                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>{magnitude} (Telemetría)</Typography>
-                                    <Typography sx={dmr.typography.numeric[magnitude]}>p95 385ms</Typography>
+                                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>{magnitude} (Métricas Comerciales)</Typography>
+                                    <Typography sx={dmr.typography.numeric[magnitude]}>CSAT 4.8</Typography>
                                 </Box>
                             ))}
                         </Stack>
@@ -981,7 +1644,7 @@ export function VisualFoundationsPage() {
 
                 {/* FOOTER */}
                 <Box component="footer" sx={{ display: "flex", justifyContent: "space-between", py: cssPx(dmr.spacing.md), borderTop: `1px solid ${dmr.borders.subtle}` }}>
-                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>Apex Design System · AI Ops Foundations</Typography>
+                    <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>Apex Design System · E-commerce &amp; AI Foundations</Typography>
                 </Box>
             </Stack>
         </Box>

@@ -1,105 +1,130 @@
 /**
- * Repositorio del dominio "AI Ops & API Gateway".
+ * Repositorio del dominio "E-commerce & Asistente IA".
  *
  * Encapsula la fuente de datos: hoy devuelve mocks, mañana puede llamar a
  * FastAPI sin tocar la UI. Cada función es async y refleja la forma del
  * contrato (./types.ts); un consumidor del template solo reemplaza esta
  * implementación por fetch real.
  *
- * Los números simulan un producto SaaS de observabilidad de LLMs con
- * arquitectura híbrida: enrutamiento semántico local + caché vectorial
- * (Qdrant) + fallback a nube (OpenAI). Buscan coherencia técnica entre
- * KPIs, balanceo, alertas, gráfica horaria y telemetría en vivo.
+ * Los números simulan una tienda en línea con asistente IA: canales de
+ * interacción (Web, WhatsApp, Instagram, voz), impacto del bot en ventas
+ * y soporte, y alertas de negocio. Busca coherencia entre KPIs, la tabla
+ * de canales, alertas, la gráfica horaria y la conversación en vivo. Las trazas
+ * son conversaciones reales de clientes con el asistente.
  */
 
 import type {
-    ActiveModelRow,
+    CanalInteraccionRow,
     MetricSummary,
-    SerieEnrutamientoPorModelo,
+    RendimientoConversacion,
+    SerieInteraccionesPorCanal,
     SystemAlert,
-    TelemetriaGateway,
     TraceLog,
 } from "./types";
 
 const metricasResumen: MetricSummary[] = [
     {
-        etiqueta: "Latencia p95 (TTFT)",
-        valor: "122 ms",
-        variacion: -8.7,
-        variacionEsPositiva: false,
-        sparkline: [186, 174, 169, 158, 149, 152, 141, 135, 128, 133, 126, 122],
-    },
-    {
-        etiqueta: "Ahorro Estimado (Cómputo Local)",
-        valor: "$7.4k",
-        variacion: 14.8,
+        etiqueta: "Clientes Alcanzados (24h)",
+        valor: "12.4k",
+        variacion: 18.6,
         variacionEsPositiva: true,
-        sparkline: [28, 31, 34, 33, 38, 41, 44, 47, 51, 55, 58, 62],
+        sparkline: [6.2, 6.8, 7.1, 7.9, 8.4, 9.0, 9.6, 10.1, 10.8, 11.3, 11.9, 12.4],
     },
     {
-        etiqueta: "Aciertos de Caché Semántica",
-        valor: "84.6%",
-        variacion: 6.3,
+        etiqueta: "Ventas Asistidas por IA",
+        valor: "$18.9k",
+        variacion: 21.3,
         variacionEsPositiva: true,
-        sparkline: [70, 73, 72, 76, 79, 78, 81, 83, 82, 84, 85, 85],
+        sparkline: [8.9, 9.6, 10.2, 11.0, 12.1, 12.9, 13.8, 14.7, 15.9, 16.8, 17.8, 18.9],
     },
     {
-        etiqueta: "Fallback Automático a Nube",
-        valor: "6.8%",
-        variacion: -12.4,
-        variacionEsPositiva: false,
-        sparkline: [22, 20, 18, 17, 15, 14, 12, 11, 10, 9, 7.8, 6.8],
+        etiqueta: "Tasa de Finalización de Conversación",
+        valor: "76.4%",
+        variacion: 8.9,
+        variacionEsPositiva: true,
+        sparkline: [62, 64, 66, 65, 68, 70, 71, 73, 74, 75, 76, 76.4],
+    },
+    {
+        etiqueta: "Satisfacción del Cliente (CSAT)",
+        valor: "4.6 / 5",
+        variacion: 3.1,
+        variacionEsPositiva: true,
+        sparkline: [4.0, 4.1, 4.2, 4.1, 4.3, 4.3, 4.4, 4.5, 4.4, 4.5, 4.6, 4.6],
     },
 ];
 
-const modelosActivos: ActiveModelRow[] = [
+const canalesInteraccion: CanalInteraccionRow[] = [
     {
-        id: "llama3-local",
-        nombre: "Llama-3 (Local)",
-        backend: "GPU CUDA · L4",
-        tiempoRespuestaMs: 205,
-        traficoAsignado: 38,
+        id: "chatbot-web",
+        nombre: "Chatbot Ventas (Web)",
+        canal: "Web",
+        tipoAsistencia: "Bot IA",
+        asistente: "Bot IA · GPT-4o mini",
+        tiempoRespuestaMs: 850,
+        traficoAsignado: 44,
+        interacciones: 4210,
+        tasaResolucion: 88.2,
         estado: "operativo",
     },
     {
-        id: "qwen-coder-local",
-        nombre: "Qwen-2.5-Coder (Local)",
-        backend: "CPU Cluster · 12 cores",
-        tiempoRespuestaMs: 340,
-        traficoAsignado: 22,
+        id: "bot-whatsapp",
+        nombre: "Asistente Devoluciones (WhatsApp)",
+        canal: "WhatsApp",
+        tipoAsistencia: "Bot IA",
+        asistente: "Bot IA · Twilio",
+        tiempoRespuestaMs: 1200,
+        traficoAsignado: 23,
+        interacciones: 2180,
+        tasaResolucion: 82.5,
         estado: "operativo",
     },
     {
-        id: "qdrant-cache",
-        nombre: "Qdrant Caché Semántico",
-        backend: "Vector DB · Docker",
-        tiempoRespuestaMs: 14,
-        traficoAsignado: 52,
-        estado: "operativo",
-    },
-    {
-        id: "gpt4o-mini",
-        nombre: "GPT-4o mini (Fallback)",
-        backend: "OpenAI · API",
-        tiempoRespuestaMs: 610,
-        traficoAsignado: 10,
+        id: "soporte-humano",
+        nombre: "Soporte Humano (Fallback)",
+        canal: "Chat · Teléfono",
+        tipoAsistencia: "Humano",
+        asistente: "Agentes CX · Helpdesk",
+        tiempoRespuestaMs: 4800,
+        traficoAsignado: 12,
+        interacciones: 1160,
+        tasaResolucion: 71.0,
         estado: "degradado",
     },
     {
-        id: "gpt4o",
-        nombre: "GPT-4o (Fallback)",
-        backend: "OpenAI · API",
-        tiempoRespuestaMs: 740,
+        id: "instagram-bot",
+        nombre: "Bot Instagram DM",
+        canal: "Instagram DM",
+        tipoAsistencia: "Bot IA",
+        asistente: "Bot IA · Meta API",
+        tiempoRespuestaMs: 1400,
+        traficoAsignado: 9,
+        interacciones: 890,
+        tasaResolucion: 79.4,
+        estado: "operativo",
+    },
+    {
+        id: "email-bot",
+        nombre: "Asistente de Facturación (Email)",
+        canal: "Email",
+        tipoAsistencia: "Bot IA",
+        asistente: "Bot IA · Facturación",
+        tiempoRespuestaMs: 1900,
+        traficoAsignado: 8,
+        interacciones: 745,
+        tasaResolucion: 74.8,
+        estado: "degradado",
+    },
+    {
+        id: "voice-ia",
+        nombre: "IVR Inteligente (Voz)",
+        canal: "Teléfono",
+        tipoAsistencia: "Bot IA + Humano",
+        asistente: "IVR · ASR/TTS + derivación",
+        tiempoRespuestaMs: 2600,
         traficoAsignado: 4,
-        estado: "degradado",
-    },
-    {
-        id: "mistral7b",
-        nombre: "Mistral-7B (Standby)",
-        backend: "GPU CUDA · Reservado",
-        tiempoRespuestaMs: 0,
-        traficoAsignado: 0,
-        estado: "offline",
+        interacciones: 410,
+        tasaResolucion: 68.9,
+        estado: "operativo",
     },
 ];
 
@@ -107,95 +132,95 @@ const alertasSistema: SystemAlert[] = [
     {
         id: "a1",
         nivel: "info",
-        categoria: "modelo",
-        titulo: "Prompt truncado por contexto",
+        categoria: "ventas",
+        titulo: "Pico de consultas por la campaña Black Friday",
         detalle:
-            "Llama-3 recortó 1.4k tokens del prompt al alcanzar la ventana 4k; se aplicó el resumen temprano de sistema para preservar la respuesta.",
+            "Las consultas sobre envíos crecieron 3.2x en la última hora; el bot absorbió el 78% sin escalar a humano.",
         timestamp: "hace 2 min",
     },
     {
         id: "a2",
         nivel: "warning",
-        categoria: "enrutamiento",
-        titulo: "Cuota OpenAI al 82% (RPM)",
+        categoria: "soporte",
+        titulo: "WhatsApp escaló 15 casos a soporte humano",
         detalle:
-            "El ingest de la tarde consumió el 82% de la cuota del proyecto; el balanceador desviará fallbacks a Anthropic si se agota.",
+            "El Asistente de Devoluciones derivó 15 conversaciones por dudas de facturación en la última hora.",
         timestamp: "hace 8 min",
     },
     {
         id: "a3",
         nivel: "info",
-        categoria: "enrutamiento",
-        titulo: "Bypass de caché semántica",
+        categoria: "ventas",
+        titulo: "El bot cerró 42 ventas directas hoy",
         detalle:
-            "Qdrant reatendió la consulta con acierto (SIM 0.91): ahorró una llamada completa al LLM en 38 ms.",
+            "Checkout asistido: 42 pedidos completados sin intervención humana; ticket promedio de $64.",
         timestamp: "hace 17 min",
     },
     {
         id: "a4",
         nivel: "error",
-        categoria: "modelo",
-        titulo: "Mistral-7B retirado del balanceador",
+        categoria: "soporte",
+        titulo: "Baja tasa de resolución en facturación",
         detalle:
-            "Doble reinicio del worker por OOM de CUDA; el runtime quedó en standby hasta aprobación del equipo.",
+            "El Asistente de Facturación resolvió el 74.8% (-6 pts vs. semana pasada); se activó la revisión del flujo.",
         timestamp: "hace 31 min",
     },
     {
         id: "a5",
-        nivel: "error",
-        categoria: "seguridad",
-        titulo: "Pico de HTTP 429 en una clave",
+        nivel: "warning",
+        categoria: "campana",
+        titulo: "Enganche de la campaña por debajo del objetivo",
         detalle:
-            "3.2k respuestas 429 en 5 min desde 'prod_frontend'; se aplicó throttling del cliente y se notificó al propietario.",
+            "El CTR del banner de la campaña cayó 18%; el bot redirige las consultas al catálogo en oferta.",
         timestamp: "hace 52 min",
     },
     {
         id: "a6",
         nivel: "info",
         categoria: "enrutamiento",
-        titulo: "Caché semántica al 84%",
+        titulo: "Derivación eficiente hacia humanos",
         detalle:
-            "El 84% de las peticiones reutilizó contexto cacheado; el costo efectivo por token bajó 6.3%.",
+            "Solo el 12% de las interacciones requirió un agente; el resto se resolvió en el primer contacto.",
         timestamp: "hace 1 h",
     },
 ];
 
-const serieEnrutamientoPorModelo: SerieEnrutamientoPorModelo = {
+const serieInteracciones: SerieInteraccionesPorCanal = {
     horas: ["00", "02", "04", "06", "08", "10", "12", "14", "16", "18", "20", "22"],
-    modelos: [
+    canales: [
         {
-            modelo: "Llama-3 (Local)",
-            valores: [340, 360, 300, 240, 320, 420, 520, 600, 640, 560, 450, 380],
+            canal: "Chatbot Web",
+            valores: [310, 280, 250, 240, 300, 420, 560, 680, 720, 640, 520, 410],
         },
         {
-            modelo: "Qwen-2.5-Coder (Local)",
-            valores: [180, 190, 160, 130, 180, 230, 270, 290, 300, 260, 220, 190],
+            canal: "WhatsApp Bot",
+            valores: [170, 160, 140, 130, 180, 240, 300, 340, 360, 320, 280, 220],
         },
         {
-            modelo: "GPT-4o mini (Fallback)",
-            valores: [120, 110, 120, 140, 150, 170, 190, 200, 220, 230, 260, 250],
+            canal: "Instagram DM",
+            valores: [90, 80, 70, 80, 110, 150, 190, 210, 220, 200, 160, 120],
         },
         {
-            modelo: "GPT-4o (Fallback)",
-            valores: [60, 60, 70, 80, 90, 100, 110, 120, 130, 170, 210, 190],
+            canal: "Soporte Humano",
+            valores: [60, 50, 45, 50, 80, 110, 130, 140, 150, 130, 110, 90],
         },
     ],
 };
 
-const telemetriaGateway: TelemetriaGateway = {
-    cuotaRpm: {
-        nombre: "OpenAI RPM",
-        detalle: "OpenAI (Fallback)",
-        porcentaje: 82,
-        valorFormateado: "410 / 500 req/min",
-        nota: "Queda 18% de margen; el enrutador desviará fallbacks a Anthropic si se agota.",
+const rendimientoConversacion: RendimientoConversacion = {
+    inicioConversacion: {
+        nombre: "Inicio de Conversación",
+        detalle: "Bot · Web y WhatsApp",
+        porcentaje: 78,
+        valorFormateado: "498 / 640 visitas inician chat",
+        nota: "Solo el 6% abandona antes del primer mensaje.",
     },
-    cachePrompts: {
-        nombre: "Caché Semántica",
-        detalle: "Qdrant · SIM ≥ 0.92",
-        porcentaje: 84,
-        valorFormateado: "8.4k / 10k peticiones",
-        nota: "Los prompts con score ≥ 0.92 no tocan al LLM.",
+    checkoutAsistido: {
+        nombre: "Compra Asistida (Checkout)",
+        detalle: "Tasa sobre conversaciones",
+        porcentaje: 62,
+        valorFormateado: "62% llegan al checkout",
+        nota: "38% restante: soporte o salida sin compra.",
     },
 };
 
@@ -203,150 +228,146 @@ export function obtenerMetricasResumen(): Promise<MetricSummary[]> {
     return Promise.resolve(metricasResumen);
 }
 
-export function obtenerModelosActivos(): Promise<ActiveModelRow[]> {
-    return Promise.resolve(modelosActivos);
+export function obtenerCanalesInteraccion(): Promise<CanalInteraccionRow[]> {
+    return Promise.resolve(canalesInteraccion);
 }
 
 export function obtenerAlertasSistema(): Promise<SystemAlert[]> {
     return Promise.resolve(alertasSistema);
 }
 
-export function obtenerSerieEnrutamientoPorModelo(): Promise<SerieEnrutamientoPorModelo> {
-    return Promise.resolve(serieEnrutamientoPorModelo);
+export function obtenerSerieInteracciones(): Promise<SerieInteraccionesPorCanal> {
+    return Promise.resolve(serieInteracciones);
 }
 
-export function obtenerTelemetriaGateway(): Promise<TelemetriaGateway> {
-    return Promise.resolve(telemetriaGateway);
+export function obtenerRendimientoConversacion(): Promise<RendimientoConversacion> {
+    return Promise.resolve(rendimientoConversacion);
 }
 
-const trazasHistorial: TraceLog[] = [
+const conversacionesHistorial: TraceLog[] = [
     {
         id: "tr-0042",
         timestamp: "14:37:02",
-        modelo: "Llama-3 (Local)",
-        backend: "GPU CUDA · L4",
+        canal: "Chatbot Ventas (Web)",
+        asistente: "Bot IA · GPT-4o mini",
         statusHttp: 200,
-        latenciaMs: 205,
+        latenciaMs: 850,
         totalTokens: 486,
         payload: {
-            systemPrompt:
-                "Eres el copiloto de mitigación de un gateway de LLMs: resume la alerta activa en hasta tres viñetas y sugiere el siguiente paso operativo.",
-            userPrompt:
-                "Resume la alerta 'Cuota OpenAI al 82%' y sugiere el siguiente paso operativo.",
-            completionText:
-                "• Cuota del proyecto al 82% por el ingest de la tarde.\n• Margen restante de 18% (≈90 req/min).\n• Siguiente paso: habilitar Anthropic como destino de fallback.",
-            temperature: 0.4,
-            promptTokens: 286,
-            completionTokens: 200,
+            contextoAsistente:
+                "Eres el asistente de ventas de la tienda: responde sobre envíos, promociones y disponibilidad con tono cercano.",
+            mensajeCliente:
+                "¿El pedido #88431 llega antes del viernes? Necesito el regalo para fin de semana.",
+            respuestaAsistente:
+                "¡Sí! Con envío exprés 24h llega el jueves antes de las 14:00. ¿Te preparo el checkout con el descuento del 10%?",
+            temperature: 0.6,
+            tokensEntrada: 286,
+            tokensSalida: 200,
             costo: "$0.012",
         },
     },
     {
         id: "tr-0043",
         timestamp: "14:36:18",
-        modelo: "GPT-4o mini (Fallback)",
-        backend: "OpenAI · API",
+        canal: "Asistente Devoluciones (WhatsApp)",
+        asistente: "Bot IA · Twilio",
         statusHttp: 429,
         latenciaMs: 1240,
         totalTokens: 212,
         payload: {
-            systemPrompt:
-                "Sirves como API de resúmenes de tickets de soporte del producto.",
-            userPrompt: "Genera el resumen del incidente INC-2217.",
-            completionText:
-                "[429] Límite de RPM del proyecto por la clave 'prod_frontend'. Reintento con backoff exponencial en 4 s.",
-            temperature: 0.7,
-            promptTokens: 180,
-            completionTokens: 32,
+            contextoAsistente:
+                "Gestionas solicitudes de devolución vía WhatsApp con empatía y pasos claros.",
+            mensajeCliente: "La zapatilla me quedó chica, ¿cómo la devuelvo?",
+            respuestaAsistente:
+                "[429] Límite de mensajes del proveedor alcanzado. Reintento con backoff en 4 s; la conversación quedó en cola.",
+            temperature: 0.6,
+            tokensEntrada: 180,
+            tokensSalida: 32,
             costo: "$0.004",
         },
     },
     {
         id: "tr-0044",
         timestamp: "14:35:47",
-        modelo: "Qwen-2.5-Coder (Local)",
-        backend: "CPU Cluster · 12 cores",
+        canal: "Chatbot Ventas (Web)",
+        asistente: "Bot IA · GPT-4o mini",
         statusHttp: 200,
         latenciaMs: 340,
         totalTokens: 1052,
         payload: {
-            systemPrompt:
-                "Eres un codificador experto en TypeScript, ECharts y Material UI.",
-            userPrompt:
-                "Refactoriza el tooltip de la gráfica principal para que use los tokens de tipografía de dmr.",
-            completionText:
-                "tooltip: {\n  trigger: 'axis',\n  valueFormatter: (v) => `${v} peticiones/h`,\n  textStyle: dmr.typography.xs,\n}",
-            temperature: 0.2,
-            promptTokens: 820,
-            completionTokens: 232,
+            contextoAsistente:
+                "Recomiendas productos del catálogo comparando precio, stock y valoraciones.",
+            mensajeCliente: "¿Qué notebook me conviene por $900: el Acer o el Lenovo?",
+            respuestaAsistente:
+                "El Lenovo tiene mejor batería (+40%) y el Acer mejor pantalla. Por $879 te sumo garantía extendida: ¿lo agrego al carrito?",
+            temperature: 0.3,
+            tokensEntrada: 820,
+            tokensSalida: 232,
             costo: "$0.006",
         },
     },
     {
         id: "tr-0045",
         timestamp: "14:34:55",
-        modelo: "GPT-4o (Fallback)",
-        backend: "OpenAI · API",
+        canal: "Asistente de Facturación (Email)",
+        asistente: "Bot IA · Facturación",
         statusHttp: 500,
         latenciaMs: 12,
         totalTokens: 415,
         payload: {
-            systemPrompt:
-                "Punto de control de calidad automático de respuestas de LLM.",
-            userPrompt:
-                "Evalúa la última completion de Llama-3 en el canal de producción.",
-            completionText:
-                "[500] El proveedor cerró el stream durante el backend request; la muestra quedó pendiente de reproceso.",
+            contextoAsistente:
+                "Resuelves consultas de facturación y emites comprobantes cuando el cliente lo pide.",
+            mensajeCliente: "Necesito la factura A del pedido 87912.",
+            respuestaAsistente:
+                "[500] El proveedor de facturación falló al generar el comprobante; el caso se escaló a un agente humano.",
             temperature: 0.0,
-            promptTokens: 415,
-            completionTokens: 0,
-            costo: "$0.006",
+            tokensEntrada: 415,
+            tokensSalida: 0,
+            costo: "$0.008",
         },
     },
     {
         id: "tr-0046",
         timestamp: "14:33:31",
-        modelo: "Qdrant Caché Semántico",
-        backend: "Vector DB · Docker",
+        canal: "Bot Instagram DM",
+        asistente: "Bot IA · Meta API",
         statusHttp: 200,
         latenciaMs: 24,
         totalTokens: 318,
         payload: {
-            systemPrompt:
-                "Pipeline de embeddings del catálogo de documentos del gateway.",
-            userPrompt:
-                "Embebe el fragmento 'política de retención de trazas'.",
-            completionText:
-                "Embedding 384-dim generado (hash e7f2a9…) y guardado en la colección 'docs' de Qdrant.",
-            temperature: 0.0,
-            promptTokens: 298,
-            completionTokens: 20,
+            contextoAsistente:
+                "Atiendes consultas rápidas de catálogo y horarios por mensaje directo.",
+            mensajeCliente: "¿Tienen envío gratis este mes?",
+            respuestaAsistente:
+                "Sí, envío gratis en compras desde $39. Te dejo el enlace del catálogo con las ofertas de la semana.",
+            temperature: 0.4,
+            tokensEntrada: 298,
+            tokensSalida: 20,
             costo: "$0.002",
         },
     },
     {
         id: "tr-0047",
         timestamp: "14:32:14",
-        modelo: "Mistral-7B (Standby)",
-        backend: "GPU CUDA · Reservado",
+        canal: "IVR Inteligente (Voz)",
+        asistente: "IVR · ASR/TTS + derivación",
         statusHttp: 200,
         latenciaMs: 340,
         totalTokens: 584,
         payload: {
-            systemPrompt:
-                "Clasificador de logs del producto de observabilidad de LLMs.",
-            userPrompt:
-                "Clasifica la entrada 'rate limit alto detectado en prod_frontend' y marca la prioridad.",
-            completionText:
-                "Prioridad alta · origen: pasarela · acción recomendada: rotar el límite del proyecto o avisar al propietario.",
+            contextoAsistente:
+                "Clasificas intenciones de llamadas de atención al cliente para encaminar al área correcta.",
+            mensajeCliente: "Necesito reactivar mi cuenta; me aparece suspendida.",
+            respuestaAsistente:
+                "Intención: recuperación de cuenta · área: soporte técnico · prioridad alta · sugerencia: verificación SMS antes de transferir.",
             temperature: 0.3,
-            promptTokens: 402,
-            completionTokens: 182,
+            tokensEntrada: 402,
+            tokensSalida: 182,
             costo: "$0.006",
         },
     },
 ];
 
 export function obtenerTrazas(): Promise<TraceLog[]> {
-    return Promise.resolve(trazasHistorial);
+    return Promise.resolve(conversacionesHistorial);
 }

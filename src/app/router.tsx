@@ -5,8 +5,8 @@ import {
     RutaProtegida,
     RutaSoloAnonimos,
 } from "../modules/auth";
-import { HomePage } from "../modules/home/HomePage";
-import { TracesPage } from "../modules/traces/TracesPage";
+import { ConversacionesPage } from "../modules/conversaciones/ConversacionesPage";
+import { EcommercePage } from "../modules/ecommerce/EcommercePage";
 import { VisualFoundationsPage } from "../modules/visual-foundations/VisualFoundationsPage";
 import { AppShell } from "./AppShell";
 
@@ -30,17 +30,21 @@ export const router = createBrowserRouter([
                 children: [
                     {
                         index: true,
-                        element: <HomePage />,
+                        element: <VisualFoundationsPage />,
                     },
                     {
-                        path: "traces",
-                        element: <TracesPage />,
+                        path: "ecommerce",
+                        element: <EcommercePage />,
+                    },
+                    {
+                        path: "conversaciones",
+                        element: <ConversacionesPage />,
                     },
                 ],
             },
             {
                 path: "visual-foundations",
-                element: <VisualFoundationsPage />,
+                element: <Navigate replace to="/" />,
             },
             {
                 path: "*",

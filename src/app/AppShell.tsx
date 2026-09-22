@@ -18,8 +18,8 @@ import { useTheme } from "@mui/material/styles";
 import {
     HouseIcon,
     ListIcon,
-    PaletteIcon,
     SignOutIcon,
+    StorefrontIcon,
     TreeStructureIcon,
     XIcon,
 } from "@phosphor-icons/react";
@@ -37,8 +37,8 @@ interface AppShellProps {
 
 const enlacesNavegacion = [
     { etiqueta: "Inicio", ruta: "/", Icono: HouseIcon },
-    { etiqueta: "Trazas", ruta: "/traces", Icono: TreeStructureIcon },
-    { etiqueta: "Fundamentos", ruta: "/visual-foundations", Icono: PaletteIcon },
+    { etiqueta: "E-commerce", ruta: "/ecommerce", Icono: StorefrontIcon },
+    { etiqueta: "Conversaciones", ruta: "/conversaciones", Icono: TreeStructureIcon },
 ] as const;
 
 function NavegacionLateral({
@@ -136,12 +136,14 @@ function NavegacionLateral({
 
 function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
     const theme = useTheme();
-    const { contenido, abierto, ancho } = usePanelLateral();
+    const { contenido, abierto, setAbierto, ancho } = usePanelLateral();
     const panel = contenido ?? sidePanel;
     const navigate = useNavigate();
     const sesionQuery = useSesionActual();
     const logoutMutation = useLogout();
     const esMovil = useMediaQuery(theme.breakpoints.down("md"));
+    const esPantallaCompacta = useMediaQuery(theme.breakpoints.between("md", "lg"));
+    const esPanelEscritorio = useMediaQuery(theme.breakpoints.up("lg"));
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
 
@@ -162,6 +164,24 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
         window.addEventListener("keydown", cerrarConEscape);
         return () => window.removeEventListener("keydown", cerrarConEscape);
     }, [mobileNavigationOpen]);
+
+    // Auto-colapso del Sidebar según el viewport: en pantallas medianas
+    // (md..lg) queda contraído a íconos y en lg+ se expande. El botón
+    // manual sigue funcionando hasta que se cruza el breakpoint.
+    const [prevPantallaCompacta, setPrevPantallaCompacta] = useState(esPantallaCompacta);
+    if (prevPantallaCompacta !== esPantallaCompacta) {
+        setPrevPantallaCompacta(esPantallaCompacta);
+        setSidebarCollapsed(esPantallaCompacta);
+    }
+
+    // El panel lateral derecho abre por defecto solo en escritorio amplio;
+    // en vista móvil queda cerrado y se abre bajo demanda como Drawer
+    // superpuesto (evita tapar el contenido recién cargado).
+    const [prevPanelEscritorio, setPrevPanelEscritorio] = useState(esPanelEscritorio);
+    if (prevPanelEscritorio !== esPanelEscritorio) {
+        setPrevPanelEscritorio(esPanelEscritorio);
+        setAbierto(esPanelEscritorio);
+    }
 
     // El mismo control cambia de comportamiento según el viewport:
     // móvil alterna el Drawer, escritorio colapsa/expande el Sidebar flotante.
@@ -190,6 +210,12 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
     const sidebarWidth = sidebarCollapsed
         ? theme.dmr.layout.sidebarCollapsedWidth
         : theme.dmr.layout.sidebarExpandedWidth;
+    const panelWidth =
+        ancho === "angosto"
+            ? theme.dmr.layout.rightPanelWidthNarrow
+            : ancho === "ancho"
+              ? theme.dmr.layout.rightPanelWidthWide
+              : theme.dmr.layout.rightPanelWidth;
 
     return (
         // 2. Fondo total de la aplicación autenticada.
@@ -519,12 +545,7 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
                                 sx={(currentTheme) => ({
                                     display: { xs: "none", lg: "block" },
                                     flex: "0 0 auto",
-                                    width:
-                                        ancho === "angosto"
-                                            ? currentTheme.dmr.layout.rightPanelWidthNarrow
-                                            : ancho === "ancho"
-                                              ? currentTheme.dmr.layout.rightPanelWidthWide
-                                              : currentTheme.dmr.layout.rightPanelWidth,
+                                    width: panelWidth,
                                     minWidth: 0,
                                     minHeight: 0,
                                     overflowX: "hidden",
@@ -586,6 +607,84 @@ function AppShellLayout({ sidePanel, floatingLayer }: AppShellProps) {
                         onNavigate={() => setMobileNavigationOpen(false)}
                     />
                 </Drawer>
+
+                {/* Panel lateral en móvil: superpuesto como Drawer derecho.
+                    En escritorio amplio vive inline (aside); por debajo de lg
+                    se desliza sobre el contenido y se cierra al elegir fuera.
+                    El ancho respeta el ancho declarado por el módulo activo. */}
+                {panel && abierto && !esPanelEscritorio ? (
+                    <Drawer
+                        id="panel-lateral-movil"
+                        variant="temporary"
+                        anchor="right"
+                        open={true}
+                        onClose={() => setAbierto(false)}
+                        sx={(currentTheme) => ({
+                            display: { xs: "block", lg: "none" },
+                            position: "absolute",
+                            inset: 0,
+                            top: `${currentTheme.dmr.layout.topBarHeight}px`,
+                            zIndex: currentTheme.zIndex.drawer,
+                            pointerEvents: "none",
+                        })}
+                        slotProps={{
+                            paper: {
+                                "aria-label": "Panel lateral",
+                                sx: {
+                                    position: "absolute",
+                                    top: 0,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    width: `min(${panelWidth}px, 100%)`,
+                                    height: `calc(100dvh - ${theme.dmr.layout.topBarHeight}px)`,
+                                    overflow: "hidden",
+                                    pointerEvents: "auto",
+                                    borderLeft: `1px solid ${theme.dmr.borders.subtle}`,
+                                    bgcolor: theme.dmr.superficies.panel,
+                                },
+                            },
+                        }}
+                    >
+                        <Stack
+                            direction="row"
+                            sx={(currentTheme) => ({
+                                flex: "0 0 auto",
+                                justifyContent: "flex-end",
+                                bgcolor: currentTheme.dmr.superficies.panel,
+                                px: `${currentTheme.dmr.spacing.lg}px`,
+                            })}
+                        >
+                            <Tooltip title="Cerrar panel lateral">
+                                <IconButton
+                                    color="inherit"
+                                    onClick={() => setAbierto(false)}
+                                    aria-label="Cerrar panel lateral"
+                                    sx={(currentTheme) => ({
+                                        width: currentTheme.dmr.density.compact.controlHeight,
+                                        height: currentTheme.dmr.density.compact.controlHeight,
+                                        "&:focus-visible": {
+                                            outline: `2px solid ${currentTheme.dmr.borders.focus}`,
+                                            outlineOffset: currentTheme.dmr.spacing.xs,
+                                        },
+                                    })}
+                                >
+                                    <XIcon size={20} aria-hidden="true" />
+                                </IconButton>
+                            </Tooltip>
+                        </Stack>
+                        <Box
+                            sx={(currentTheme) => ({
+                                flex: "1 1 auto",
+                                minHeight: 0,
+                                overflowY: "auto",
+                                overflowX: "hidden",
+                                p: `${currentTheme.dmr.spacing.lg}px`,
+                            })}
+                        >
+                            {panel}
+                        </Box>
+                    </Drawer>
+                ) : null}
 
                 {/* 10. Capa reservada para futuros elementos flotantes. */}
                 {floatingLayer ? (

@@ -1,25 +1,25 @@
 import {
+    ChatCircle,
     CheckCircleIcon,
-    LightningIcon,
+    EnvelopeSimple,
+    Headset,
+    InstagramLogo,
     RobotIcon,
     SidebarSimpleIcon,
+    StorefrontIcon,
     WarningCircleIcon,
+    WhatsappLogo,
 } from "@phosphor-icons/react";
 import {
     Box,
+    Button,
     Card,
     CardContent,
     Chip,
+    CircularProgress,
     Divider,
-    IconButton,
     LinearProgress,
     Stack,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
     Tooltip,
     Typography,
 } from "@mui/material";
@@ -31,14 +31,14 @@ import { useQuery } from "@tanstack/react-query";
 import { usePanelLateral } from "../../app/panelContext";
 import {
     obtenerAlertasSistema,
+    obtenerCanalesInteraccion,
     obtenerMetricasResumen,
-    obtenerModelosActivos,
-    obtenerSerieEnrutamientoPorModelo,
-    obtenerTelemetriaGateway,
+obtenerRendimientoConversacion,
+    obtenerSerieInteracciones,
 } from "../../shared/ai-gateway/api";
 import type {
-    ActiveModelRow,
-    EstadoModelo,
+    CanalInteraccionRow,
+    EstadoServicio,
     MedidorEnVivo,
     MetricSummary,
     SystemAlert,
@@ -49,7 +49,7 @@ import { crearTemaEcharts } from "../../theme";
 import type { DmrTheme } from "../../theme/variables-visuales";
 
 /**
- * Operaciones del Gateway IA (AI Ops & API Gateway).
+ * E-commerce & Asistente IA: operaciones de venta y soporte.
  *
  * - El Workspace (centro) se renderiza aquí mismo.
  * - El SidePanel derecho es GLOBAL y lo rellena el módulo activo con
@@ -67,6 +67,10 @@ import type { DmrTheme } from "../../theme/variables-visuales";
 const rangosTemporales = ["1 h", "24 h", "7 d"] as const;
 
 type RangoTemporal = (typeof rangosTemporales)[number];
+
+/** Formatea grandes volúmenes en notación compacta local (p. ej. 4210 → "4,2 mil"). */
+const formatoNumeroCompacto = (valor: number): string =>
+    new Intl.NumberFormat("es", { notation: "compact", maximumFractionDigits: 1 }).format(valor);
 
 /* ------------------------- Estados de consulta ligeros ------------------------- */
 
@@ -127,8 +131,17 @@ function MiniSparkline({ points, color }: { points: ReadonlyArray<number>; color
 
 /* -------------------------------- Tarjetas KPI -------------------------------- */
 
-function TarjetaMetrica({ metrica, color }: { metrica: MetricSummary; color: string }) {
-    const dmr = useTheme().dmr;
+function TarjetaMetrica({
+    metrica,
+    color,
+    softAccent,
+}: {
+    metrica: MetricSummary;
+    color: string;
+    softAccent: string;
+}) {
+    const theme = useTheme();
+    const dmr = theme.dmr;
     // Un aumento puede ser bueno (tokens) o malo (latencia): el color del
     // delta deriva de metrica.variacionEsPositiva, no del signo.
     const mejora =
@@ -141,7 +154,24 @@ function TarjetaMetrica({ metrica, color }: { metrica: MetricSummary; color: str
     const signo = metrica.variacion > 0 ? "+" : "";
 
     return (
-        <Card>
+        <Card
+            sx={(theme) => ({
+                ...solidPanelStyles(theme),
+                backgroundImage: `radial-gradient(circle at 100% 0%, ${softAccent}, transparent 48%)`,
+                transition: theme.transitions.create(
+                    ["transform", "border-color", "box-shadow"],
+                    {
+                        duration: theme.dmr.motion.duration.fast,
+                        easing: theme.dmr.motion.easing.standard,
+                    },
+                ),
+                "&:hover": {
+                    transform: "translateY(-2px)",
+                    borderColor: color,
+                    boxShadow: `${theme.dmr.elevation.card}, 0 16px 48px ${softAccent}`,
+                },
+            })}
+        >
             <CardContent sx={{ p: cssPx(dmr.density.comfortable.cardPadding) }}>
                 <Stack sx={{ gap: cssPx(dmr.spacing.sm) }}>
                     <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary }}>
@@ -178,13 +208,13 @@ function TarjetaMetrica({ metrica, color }: { metrica: MetricSummary; color: str
 
 /* ------------------------- Gráfica principal (ECharts) ------------------------- */
 
-function GraficaPeticionesPorModelo() {
+function GraficaInteraccionesPorCanal() {
     const containerRef = useRef<HTMLDivElement>(null);
     const theme = useTheme();
     const dmr = theme.dmr;
     const serieQuery = useQuery({
-        queryKey: ["ai-gateway", "serie-enrutamiento"],
-        queryFn: obtenerSerieEnrutamientoPorModelo,
+        queryKey: ["ai-gateway", "serie-canales"],
+        queryFn: obtenerSerieInteracciones,
     });
     const serie = serieQuery.data;
 
@@ -242,7 +272,7 @@ function GraficaPeticionesPorModelo() {
                 },
                 // Evita que el tooltip desborde la tarjeta del dashboard.
                 confine: true,
-                // Resumen por hora: una fila por modelo + total apilado.
+                // Resumen por hora: una fila por canal + total apilado.
                 formatter: (params: unknown) => {
                     const filas = (Array.isArray(params) ? params : [params]) as ReadonlyArray<{
                         marker?: string;
@@ -260,7 +290,7 @@ function GraficaPeticionesPorModelo() {
                                 `${fila.marker ?? ""}${fila.seriesName}: <b>${fila.value}</b>`,
                         )
                         .join("<br/>");
-                    return `${filas[0]?.axisValueLabel ?? ""}<br/>${cuerpo}<hr style="margin: 6px 0;"/>Total: <b>${total}</b> peticiones/h`;
+                    return `${filas[0]?.axisValueLabel ?? ""}<br/>${cuerpo}<hr style="margin: 6px 0;"/>Total: <b>${total}</b> interacciones/h`;
                 },
             },
 
@@ -272,24 +302,24 @@ function GraficaPeticionesPorModelo() {
 
             yAxis: {
                 type: "value",
-                name: "peticiones/h",
+                name: "interacciones/h",
                 nameTextStyle: {
                     color: dmr.textos.secondary,
                     fontFamily: dmr.typography.fontFamily.base,
                 },
             },
 
-            series: serie.modelos.map((modelo, indice) => ({
-                name: modelo.modelo,
+            series: serie.canales.map((canal, indice) => ({
+                name: canal.canal,
                 type: "bar",
                 stack: "total",
-                data: modelo.valores,
+                data: canal.valores,
                 barMaxWidth: dmr.spacing.xl,
                 // Redondeo únicamente en la capa superior para que el borde
                 // cierre la pila apilada con suavidad.
                 itemStyle: {
                     color: dmr.charts.categorical[indice % dmr.charts.categorical.length],
-                    borderRadius: indice === serie.modelos.length - 1 ? dmr.radius.xs : 0,
+                    borderRadius: indice === serie.canales.length - 1 ? dmr.radius.xs : 0,
                 },
             })),
         });
@@ -312,7 +342,7 @@ function GraficaPeticionesPorModelo() {
         <Box
             ref={containerRef}
             role="img"
-            aria-label="Peticiones enrutadas por hora desglosadas por modelo"
+            aria-label="Interacciones por hora desglosadas por canal"
             sx={{
                 width: "100%",
                 minHeight: { xs: 320, sm: 380, lg: 420 },
@@ -321,11 +351,11 @@ function GraficaPeticionesPorModelo() {
     );
 }
 
-/* ----------------------- Tabla de modelos y balanceo ----------------------- */
+/* ------------------- Bento grid de canales de interacción ------------------- */
 
-const coloresEstadoModelo = (
+const coloresEstadoServicio = (
     dmr: DmrTheme,
-): Record<EstadoModelo, { subtle: string; texto: string; etiqueta: string }> => ({
+): Record<EstadoServicio, { subtle: string; texto: string; etiqueta: string }> => ({
     operativo: {
         subtle: dmr.estados.success.subtle,
         texto: dmr.estados.success.foreground,
@@ -343,154 +373,196 @@ const coloresEstadoModelo = (
     },
 });
 
-function TablaModelosActivos() {
+/** Icono contextual por canal de contacto (propiedad `canal` del contrato). */
+function IconoCanal({ canal, size = 20 }: { canal: string; size?: number }) {
     const dmr = useTheme().dmr;
-    const estadosModelo = coloresEstadoModelo(dmr);
-    const modelosQuery = useQuery({
-        queryKey: ["ai-gateway", "modelos"],
-        queryFn: obtenerModelosActivos,
-    });
+    const propiedades = {
+        size,
+        color: dmr.primary.default,
+        weight: "fill" as const,
+        "aria-hidden": true as const,
+    };
+
+    switch (canal) {
+        case "WhatsApp":
+            return <WhatsappLogo {...propiedades} />;
+        case "Instagram DM":
+            return <InstagramLogo {...propiedades} />;
+        case "Email":
+            return <EnvelopeSimple {...propiedades} />;
+        case "Teléfono":
+        case "Chat · Teléfono":
+            return <Headset {...propiedades} />;
+        default:
+            return <ChatCircle {...propiedades} />;
+    }
+}
+
+/** Tarjeta del bento grid: una ficha inmersiva por canal de interacción. */
+function TarjetaCanal({ canal }: { canal: CanalInteraccionRow }) {
+    const theme = useTheme();
+    const dmr = theme.dmr;
+    const estado = coloresEstadoServicio(dmr)[canal.estado];
+    const tasaResolucion = Math.round(canal.tasaResolucion);
 
     return (
         <Box
-            component="section"
+            component="article"
             sx={(theme) => ({
                 ...solidPanelStyles(theme),
+                display: "flex",
+                flexDirection: "column",
+                gap: cssPx(theme.dmr.spacing.lg),
                 p: cssPx(theme.dmr.density.comfortable.cardPadding),
             })}
         >
-            <Stack direction="row" sx={{ alignItems: "baseline", justifyContent: "space-between", gap: cssPx(dmr.spacing.md) }}>
-                <Typography sx={{ ...dmr.typography.lg, fontWeight: 600, color: dmr.textos.primary }}>
-                    Modelos Activos y Balanceo de Carga
-                </Typography>
-                <Typography sx={{ ...dmr.typography.micro, color: dmr.textos.tertiary }}>
-                    Datos ilustrativos del catálogo
+            {/* Cabecera: icono del canal + nombre y asistente. */}
+            <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.md), minWidth: 0 }}>
+                <Box
+                    sx={{
+                        flexShrink: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        width: cssPx(dmr.spacing["3xl"]),
+                        height: cssPx(dmr.spacing["3xl"]),
+                        borderRadius: cssPx(dmr.radius.md),
+                        bgcolor: dmr.primary.subtle,
+                        color: dmr.primary.default,
+                    }}
+                >
+                    <IconoCanal canal={canal.canal} />
+                </Box>
+                <Stack sx={{ gap: cssPx(dmr.spacing.xs), minWidth: 0 }}>
+                    <Typography
+                        noWrap
+                        sx={{ ...dmr.typography.md, fontWeight: 600, color: dmr.textos.primary }}
+                    >
+                        {canal.nombre}
+                    </Typography>
+                    <Typography noWrap sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>
+                        {canal.asistente}
+                    </Typography>
+                </Stack>
+            </Stack>
+
+            {/* Métrica principal: tasa de resolución en un medidor circular. */}
+            <Stack sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
+                <Box sx={{ position: "relative", width: 112, height: 112, display: "grid", placeItems: "center" }}>
+                    <CircularProgress
+                        variant="determinate"
+                        value={canal.tasaResolucion}
+                        size={104}
+                        thickness={5}
+                        aria-label={`Tasa de resolución de ${canal.nombre}`}
+                        sx={{ color: dmr.primary.default }}
+                    />
+                    <Box sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+                        <Typography
+                            sx={{ ...dmr.typography.numeric.lg, fontWeight: 600, color: dmr.textos.primary }}
+                        >
+                            {tasaResolucion}%
+                        </Typography>
+                    </Box>
+                </Box>
+                <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary }}>
+                    Tasa de resolución
                 </Typography>
             </Stack>
 
-            {modelosQuery.isPending ? (
-                <NotaDatosEnVacio texto="Cargando catálogo de modelos…" />
-            ) : modelosQuery.isError ? (
-                <NotaDatosEnVacio texto="No fue posible cargar el catálogo de modelos." />
-            ) : (
-                <>
-                    <TableContainer sx={{ mt: cssPx(dmr.spacing.lg) }}>
-                        <Table size="small" aria-label="Modelos activos y balanceo de carga">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Modelo</TableCell>
-                                    <TableCell align="right">T. Respuesta (p50)</TableCell>
-                                    <TableCell sx={{ width: "26%" }}>Tráfico asignado</TableCell>
-                                    <TableCell align="right">Estado</TableCell>
-                                </TableRow>
-                            </TableHead>
+            {/* Pie: volumen, latencia y estado del servicio. */}
+            <Box sx={{ mt: "auto" }}>
+                <Divider sx={{ borderColor: dmr.borders.subtle, mb: cssPx(dmr.spacing.md) }} />
+                <Stack
+                    direction="row"
+                    sx={{
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: cssPx(dmr.spacing.md),
+                        flexWrap: "wrap",
+                    }}
+                >
+                    <Stack sx={{ gap: cssPx(dmr.spacing.xs) }}>
+                        <Typography sx={{ ...dmr.typography.micro, color: dmr.textos.tertiary }}>
+                            Volumen
+                        </Typography>
+                        <Typography sx={{ ...dmr.typography.numeric.md, color: dmr.textos.primary }}>
+                            {formatoNumeroCompacto(canal.interacciones)}
+                        </Typography>
+                    </Stack>
 
-                            <TableBody>
-                                {modelosQuery.data.map((modelo: ActiveModelRow) => {
-                                    const estado = estadosModelo[modelo.estado];
-                                    const respuesta =
-                                        modelo.estado === "offline"
-                                            ? "—"
-                                            : `${modelo.tiempoRespuestaMs} ms`;
+                    <Stack sx={{ gap: cssPx(dmr.spacing.xs) }}>
+                        <Typography sx={{ ...dmr.typography.micro, color: dmr.textos.tertiary }}>
+                            Latencia
+                        </Typography>
+                        <Typography sx={{ ...dmr.typography.numeric.md, color: dmr.textos.primary }}>
+                            {canal.tiempoRespuestaMs} ms
+                        </Typography>
+                    </Stack>
 
-                                    return (
-                                        <TableRow key={modelo.id} hover>
-                                            <TableCell>
-                                                <Stack sx={{ gap: cssPx(dmr.spacing.xs) }}>
-                                                    <Typography
-                                                        sx={{
-                                                            ...dmr.typography.md,
-                                                            fontWeight: 600,
-                                                            color: dmr.textos.primary,
-                                                        }}
-                                                    >
-                                                        {modelo.nombre}
-                                                    </Typography>
-                                                    <Typography
-                                                        sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}
-                                                    >
-                                                        {modelo.backend}
-                                                    </Typography>
-                                                </Stack>
-                                            </TableCell>
-
-                                            <TableCell
-                                                align="right"
-                                                sx={{ ...dmr.typography.numeric.sm, color: dmr.textos.secondary }}
-                                            >
-                                                {respuesta}
-                                            </TableCell>
-
-                                            <TableCell>
-                                                <Stack
-                                                    direction="row"
-                                                    sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}
-                                                >
-                                                    <Typography
-                                                        sx={{
-                                                            ...dmr.typography.numeric.sm,
-                                                            color: dmr.textos.secondary,
-                                                            minWidth: cssPx(dmr.spacing["2xl"]),
-                                                        }}
-                                                    >
-                                                        {modelo.traficoAsignado}%
-                                                    </Typography>
-                                                    <LinearProgress
-                                                        variant="determinate"
-                                                        value={modelo.traficoAsignado}
-                                                        aria-label={`Tráfico asignado a ${modelo.nombre}`}
-                                                        sx={{
-                                                            flex: 1,
-                                                            height: dmr.medidas.barras.media,
-                                                            borderRadius: cssPx(dmr.radius.pill),
-                                                            bgcolor: dmr.superficies.interactive,
-                                                            "& .MuiLinearProgress-bar": {
-                                                                bgcolor:
-                                                                    modelo.estado === "offline"
-                                                                        ? dmr.borders.default
-                                                                        : dmr.charts.categorical[0],
-                                                            },
-                                                        }}
-                                                    />
-                                                </Stack>
-                                            </TableCell>
-
-                                            <TableCell align="right">
-                                                <Chip
-                                                    size="small"
-                                                    label={estado.etiqueta}
-                                                    sx={{
-                                                        height: dmr.medidas.microChips.chico,
-                                                        fontSize: dmr.typography.micro.fontSize,
-                                                        bgcolor: estado.subtle,
-                                                        color: estado.texto,
-                                                    }}
-                                                />
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-
-                    <Typography
+                    <Chip
+                        size="small"
+                        label={estado.etiqueta}
                         sx={{
-                            ...dmr.typography.xs,
-                            color: dmr.textos.tertiary,
-                            mt: cssPx(dmr.spacing.lg),
+                            height: dmr.medidas.microChips.chico,
+                            fontSize: dmr.typography.micro.fontSize,
+                            bgcolor: estado.subtle,
+                            color: estado.texto,
                         }}
-                    >
-                        El balanceador enruta por latencia, costo y disponibilidad; los valores
-                        mostrados son mocks del catálogo de modelos.
-                    </Typography>
-                </>
+                    />
+                </Stack>
+            </Box>
+        </Box>
+    );
+}
+
+/** Bento grid reemplaza la tabla: fichas inmersivas de rendimiento por canal. */
+function GridCanalesInteraccion() {
+    const theme = useTheme();
+    const dmr = theme.dmr;
+    const canalesQuery = useQuery({
+        queryKey: ["ai-gateway", "canales"],
+        queryFn: obtenerCanalesInteraccion,
+    });
+
+    return (
+        <Box component="section">
+            <Stack sx={{ gap: cssPx(dmr.spacing.md), maxWidth: 720 }}>
+                <Typography sx={{ ...dmr.typography.lg, fontWeight: 600, color: dmr.textos.primary }}>
+                    Rendimiento por Canal de Asistencia
+                </Typography>
+                <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary }}>
+                    Tasa de resolución, volumen atendido y latencia de cada canal. Son datos
+                    ilustrativos de la operación diaria.
+                </Typography>
+            </Stack>
+
+            {canalesQuery.isPending ? (
+                <NotaDatosEnVacio texto="Cargando canales de interacción…" />
+            ) : canalesQuery.isError ? (
+                <NotaDatosEnVacio texto="No fue posible cargar los canales de interacción." />
+            ) : (
+                <Box
+                    sx={{
+                        mt: cssPx(dmr.spacing.lg),
+                        display: "grid",
+                        gridTemplateColumns: {
+                            xs: "1fr",
+                            sm: "repeat(2, minmax(0, 1fr))",
+                            xl: "repeat(3, minmax(0, 1fr))",
+                        },
+                        gap: cssPx(dmr.spacing.lg),
+                    }}
+                >
+                    {canalesQuery.data.map((canal: CanalInteraccionRow) => (
+                        <TarjetaCanal key={canal.id} canal={canal} />
+                    ))}
+                </Box>
             )}
         </Box>
     );
 }
 
-/* --------------------- Panel lateral global: gateway en vivo --------------------- */
+/* ----------------- Panel lateral global: conversación en vivo ----------------- */
 
 function FilaAlerta({ alerta }: { alerta: SystemAlert }) {
     const dmr = useTheme().dmr;
@@ -575,23 +647,23 @@ function FilaAlerta({ alerta }: { alerta: SystemAlert }) {
     );
 }
 
-function PanelTelemetriaGateway() {
+function PanelConversacionEnVivo() {
     const theme = useTheme();
     const dmr = theme.dmr;
     const gaugeRef = useRef<HTMLDivElement>(null);
-    const telemetriaQuery = useQuery({
-        queryKey: ["ai-gateway", "telemetria"],
-        queryFn: obtenerTelemetriaGateway,
+    const conversacionQuery = useQuery({
+        queryKey: ["ai-gateway", "conversacion"],
+        queryFn: obtenerRendimientoConversacion,
     });
     const alertasQuery = useQuery({
         queryKey: ["ai-gateway", "alertas"],
         queryFn: obtenerAlertasSistema,
     });
-    const telemetria = telemetriaQuery.data;
+    const conversacion = conversacionQuery.data;
 
     useEffect(() => {
         const container = gaugeRef.current;
-        if (!container || !telemetria) return;
+        if (!container || !conversacion) return;
 
         let chart = echarts.getInstanceByDom(container);
         if (chart) {
@@ -603,8 +675,8 @@ function PanelTelemetriaGateway() {
         });
 
         const medidores: ReadonlyArray<{ medidor: MedidorEnVivo; color: string }> = [
-            { medidor: telemetria.cuotaRpm, color: dmr.primary.default },
-            { medidor: telemetria.cachePrompts, color: dmr.secondary.default },
+            { medidor: conversacion.inicioConversacion, color: dmr.primary.default },
+            { medidor: conversacion.checkoutAsistido, color: dmr.secondary.default },
         ];
 
         chart.setOption({
@@ -662,10 +734,10 @@ function PanelTelemetriaGateway() {
             resizeObserver.disconnect();
             chart?.dispose();
         };
-    }, [dmr, telemetria]);
+    }, [dmr, conversacion]);
 
-    const cuotaRpm = telemetria?.cuotaRpm;
-    const cachePrompts = telemetria?.cachePrompts;
+    const inicioConversacion = conversacion?.inicioConversacion;
+    const checkoutAsistido = conversacion?.checkoutAsistido;
 
     return (
         <Stack sx={{ gap: cssPx(dmr.density.comfortable.contentGap) }}>
@@ -677,7 +749,7 @@ function PanelTelemetriaGateway() {
                     variant="overline"
                     sx={{ color: dmr.textos.secondary, letterSpacing: "0.12em" }}
                 >
-                    Gateway en vivo
+                    Alertas en vivo
                 </Typography>
                 <Chip
                     size="small"
@@ -691,13 +763,13 @@ function PanelTelemetriaGateway() {
                 />
             </Stack>
 
-            {/* Presión de cuota del proveedor externo y acierto de la caché. */}
+            {/* Inicio de conversación y compra asistida. */}
             <Card>
                 <CardContent sx={{ p: cssPx(dmr.density.compact.cardPadding) }}>
                     <Box
                         ref={gaugeRef}
                         role="img"
-                        aria-label="Cuota de requests por minuto del proveedor externo y tasa de acierto de la caché de prompts"
+                        aria-label="Inicio de conversación y compra asistida por IA"
                         sx={{ width: "100%", minHeight: 168 }}
                     />
 
@@ -707,16 +779,16 @@ function PanelTelemetriaGateway() {
                         <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
                             <WarningCircleIcon size={18} color={dmr.primary.default} aria-hidden="true" />
                             <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.primary, flex: 1 }}>
-                                {cuotaRpm?.detalle ?? "OpenAI (Fallback)"}
+                                {inicioConversacion?.detalle ?? "Bot · Web y WhatsApp"}
                             </Typography>
                             <Typography sx={{ ...dmr.typography.numeric.sm, color: dmr.textos.secondary }}>
-                                {cuotaRpm?.valorFormateado ?? "—"}
+                                {inicioConversacion?.valorFormateado ?? "—"}
                             </Typography>
                         </Stack>
                         <LinearProgress
                             variant="determinate"
-                            value={cuotaRpm?.porcentaje ?? 0}
-                            aria-label="Requests por minuto consumidos de la cuota del proveedor externo"
+                            value={inicioConversacion?.porcentaje ?? 0}
+                            aria-label="Visitas que inician conversación con el asistente"
                             sx={{
                                 height: dmr.medidas.barras.media,
                                 borderRadius: cssPx(dmr.radius.pill),
@@ -724,9 +796,9 @@ function PanelTelemetriaGateway() {
                                 "& .MuiLinearProgress-bar": { bgcolor: dmr.primary.default },
                             }}
                         />
-                        {cuotaRpm?.nota ? (
+                        {inicioConversacion?.nota ? (
                             <Typography sx={{ ...dmr.typography.xs, color: dmr.estados.warning.foreground }}>
-                                {cuotaRpm.nota}
+                                {inicioConversacion.nota}
                             </Typography>
                         ) : null}
 
@@ -736,16 +808,16 @@ function PanelTelemetriaGateway() {
                         >
                             <CheckCircleIcon size={18} color={dmr.secondary.default} aria-hidden="true" />
                             <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.primary, flex: 1 }}>
-                                {cachePrompts?.nombre ?? "Caché de Prompts"}
+                                {checkoutAsistido?.nombre ?? "Compra Asistida (Checkout)"}
                             </Typography>
                             <Typography sx={{ ...dmr.typography.numeric.sm, color: dmr.textos.secondary }}>
-                                {cachePrompts?.valorFormateado ?? "—"}
+                                {checkoutAsistido?.valorFormateado ?? "—"}
                             </Typography>
                         </Stack>
                         <LinearProgress
                             variant="determinate"
-                            value={cachePrompts?.porcentaje ?? 0}
-                            aria-label="Tasa de acierto de la caché de prompts"
+                            value={checkoutAsistido?.porcentaje ?? 0}
+                            aria-label="Conversaciones que llegan al checkout con el asistente"
                             sx={{
                                 height: dmr.medidas.barras.media,
                                 borderRadius: cssPx(dmr.radius.pill),
@@ -769,7 +841,7 @@ function PanelTelemetriaGateway() {
                         variant="overline"
                         sx={{ color: dmr.textos.secondary, letterSpacing: "0.12em", flex: 1 }}
                     >
-                        Monitor de Alertas Inteligentes
+                        Alertas del negocio
                     </Typography>
                     <Chip
                         size="small"
@@ -801,7 +873,58 @@ function PanelTelemetriaGateway() {
 
 /* -------------------------------- Página ---------------------------------- */
 
-export function HomePage() {
+/** CTA del header: abre el panel lateral (conversación en vivo + alertas). */
+function BotonPanelLateral({ abierto, onClick }: { abierto: boolean; onClick: () => void }) {
+    const theme = useTheme();
+    const dmr = theme.dmr;
+    const etiqueta = abierto ? "Ocultar panel lateral" : "Mostrar panel lateral";
+
+    return (
+        <Tooltip title={etiqueta} arrow>
+            <Button
+                variant="contained"
+                onClick={onClick}
+                aria-label={etiqueta}
+                aria-expanded={abierto}
+                aria-controls="panel-lateral"
+                startIcon={<SidebarSimpleIcon size={18} weight="fill" aria-hidden="true" />}
+                sx={(theme) => ({
+                    height: dmr.density.compact.controlHeight,
+                    px: cssPx(dmr.spacing.md),
+                    borderRadius: cssPx(dmr.radius.pill),
+                    bgcolor: dmr.primary.default,
+                    color: dmr.primary.foreground,
+                    fontFamily: dmr.typography.fontFamily.base,
+                    fontSize: dmr.typography.sm.fontSize,
+                    fontWeight: 600,
+                    textTransform: "none",
+                    whiteSpace: "nowrap",
+                    boxShadow: `0 0 0 1px ${dmr.primary.subtle}, 0 8px 24px ${dmr.primary.subtle}`,
+                    transition: theme.transitions.create(
+                        ["transform", "box-shadow", "background-color"],
+                        {
+                            duration: dmr.motion.duration.fast,
+                            easing: dmr.motion.easing.standard,
+                        },
+                    ),
+                    "&:hover": {
+                        bgcolor: dmr.primary.default,
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 0 0 1px ${dmr.primary.default}, 0 14px 36px ${dmr.primary.subtle}`,
+                    },
+                    "&:focus-visible": {
+                        outline: `2px solid ${dmr.borders.focus}`,
+                        outlineOffset: cssPx(dmr.spacing.xs),
+                    },
+                })}
+            >
+                Alertas en vivo
+            </Button>
+        </Tooltip>
+    );
+}
+
+export function EcommercePage() {
     const theme = useTheme();
     const dmr = theme.dmr;
     const { setContenido, abierto, setAbierto, setAncho } = usePanelLateral();
@@ -817,7 +940,7 @@ export function HomePage() {
     // ancho para respirar; al desmontar se restaura el ancho estándar.
     useEffect(() => {
         setAncho("ancho");
-        setContenido(<PanelTelemetriaGateway />);
+        setContenido(<PanelConversacionEnVivo />);
 
         return () => {
             setAncho("estandar");
@@ -825,13 +948,12 @@ export function HomePage() {
         };
     }, [setAncho, setContenido]);
 
-    const etiquetaPanel = abierto ? "Ocultar panel lateral" : "Mostrar panel lateral";
     const coloresMetricas = [
-        dmr.primary.default,
-        dmr.secondary.default,
-        dmr.estados.success.default,
-        dmr.estados.ai.default,
-    ];
+        { color: dmr.primary.default, softAccent: dmr.primary.subtle },
+        { color: dmr.secondary.default, softAccent: dmr.secondary.subtle },
+        { color: dmr.estados.success.default, softAccent: dmr.estados.success.subtle },
+        { color: dmr.estados.ai.default, softAccent: dmr.estados.ai.subtle },
+    ] as const;
 
     return (
         <Stack sx={{ gap: cssPx(dmr.density.comfortable.sectionGap) }}>
@@ -854,9 +976,9 @@ export function HomePage() {
                 >
                     <Box sx={{ minWidth: 0 }}>
                         <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm) }}>
-                            <LightningIcon size={22} color={dmr.primary.default} aria-hidden="true" />
+                            <StorefrontIcon size={22} color={dmr.primary.default} aria-hidden="true" />
                             <Typography component="h1" sx={{ ...dmr.typography["3xl"], color: dmr.textos.primary }}>
-                                Operaciones del Gateway IA
+                                E-commerce &amp; Asistente IA
                             </Typography>
                         </Stack>
                         <Typography
@@ -866,7 +988,7 @@ export function HomePage() {
                                 mt: cssPx(dmr.spacing.xs),
                             }}
                         >
-                            AI Ops &amp; API Gateway · enrutamiento, coste y protección del gateway
+                            Operaciones de venta y soporte · rendimiento del asistente y sus canales
                         </Typography>
                     </Box>
 
@@ -903,25 +1025,12 @@ export function HomePage() {
                             }}
                         />
 
-                        <Tooltip title={etiquetaPanel}>
-                            <IconButton
-                                color="inherit"
-                                onClick={() => setAbierto(!abierto)}
-                                aria-label={etiquetaPanel}
-                                aria-expanded={abierto}
-                                aria-controls="panel-lateral"
-                                sx={{
-                                    display: { xs: "none", lg: "inline-flex" },
-                                }}
-                            >
-                                <SidebarSimpleIcon size={20} aria-hidden="true" />
-                            </IconButton>
-                        </Tooltip>
+                        <BotonPanelLateral abierto={abierto} onClick={() => setAbierto(!abierto)} />
                     </Stack>
                 </Stack>
             </Box>
 
-            {/* 2. Gráfica principal: peticiones enrutadas por modelo (apiladas). */}
+            {/* 2. Gráfica principal: interacciones por canal (apiladas). */}
             <Box
                 component="section"
                 sx={(theme) => ({
@@ -935,13 +1044,13 @@ export function HomePage() {
                             variant="overline"
                             sx={{ color: dmr.primary.default, letterSpacing: "0.12em" }}
                         >
-                            Enrutamiento
+                            Canales
                         </Typography>
                         <Typography sx={{ ...dmr.typography.lg, fontWeight: 600, color: dmr.textos.primary }}>
-                            Peticiones Enrutadas por Modelo
+                            Interacciones por Canal
                         </Typography>
                     </Box>
-                    <GraficaPeticionesPorModelo />
+                    <GraficaInteraccionesPorCanal />
                 </Stack>
             </Box>
 
@@ -967,14 +1076,15 @@ export function HomePage() {
                             <TarjetaMetrica
                                 key={metrica.etiqueta}
                                 metrica={metrica}
-                                color={coloresMetricas[indice]}
+                                color={coloresMetricas[indice].color}
+                                softAccent={coloresMetricas[indice].softAccent}
                             />
                         ))}
                 </Box>
             )}
 
-            {/* 4. Tabla de modelos activos y balanceo de carga. */}
-            <TablaModelosActivos />
+            {/* 4. Bento grid de canales de interacción. */}
+            <GridCanalesInteraccion />
         </Stack>
     );
 }

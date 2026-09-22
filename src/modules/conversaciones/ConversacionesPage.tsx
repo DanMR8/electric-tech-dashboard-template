@@ -1,8 +1,10 @@
 import {
+    ChatCircleText,
     CheckCircleIcon,
-    FileSearchIcon,
     MagnifyingGlassIcon,
-    WarningCircleIcon,
+    Robot,
+    User,
+    WarningCircle,
     XCircleIcon,
 } from "@phosphor-icons/react";
 import {
@@ -33,13 +35,15 @@ import { cssPx, glassPanelStyles, solidPanelStyles } from "../../shared/styles/s
 import type { DmrTheme } from "../../theme/variables-visuales";
 
 /**
- * Explorador de Trazas (Traces & Logs).
+ * Historial de Conversaciones (Traces & Logs).
  *
- * Vista forense para inspeccionar llamadas individuales a los modelos.
+ * Vista de auditoría para inspeccionar sesiones individuales entre
+ * clientes y el asistente IA.
  * - El Workspace muestra el historial con filtros simples.
- * - Al hacer clic en una fila se inyecta el InspectorPayload en el
- *   SidePanel global (usePanelLateral); sin selección se muestra un
- *   estado vacío con instrucciones. El panel se limpia al desmontar.
+ * - Al hacer clic en una fila se inyecta el DetalleSesionChat (chat
+ *   forense) en el SidePanel global (usePanelLateral); sin selección se
+ *   muestra un estado vacío con instrucciones. El panel se limpia al
+ *   desmontar.
  * - Los datos provienen del repositorio mock (src/shared/ai-gateway/api.ts).
  * - Las superficies (glass/solid) provienen del precedente compartido
  *   src/shared/styles/superficies.ts (no formalizado aún).
@@ -78,7 +82,7 @@ const iconoStatus = (statusHttp: TraceStatusHttp) => {
         return <CheckCircleIcon size={16} aria-hidden="true" />;
     }
     if (statusHttp === 429) {
-        return <WarningCircleIcon size={16} aria-hidden="true" />;
+        return <WarningCircle size={16} aria-hidden="true" />;
     }
     return <XCircleIcon size={16} aria-hidden="true" />;
 };
@@ -97,62 +101,24 @@ function PanelEstadoVacio() {
                 py: cssPx(dmr.spacing["3xl"]),
             }}
         >
-            <FileSearchIcon size={28} color={dmr.textos.tertiary} aria-hidden="true" />
+            <ChatCircleText size={28} color={dmr.textos.tertiary} aria-hidden="true" />
             <Box>
                 <Typography
                     variant="overline"
                     sx={{ color: dmr.textos.secondary, letterSpacing: "0.12em" }}
                 >
-                    Inspector de Payload
+                    Detalle de la Sesión
                 </Typography>
                 <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary }}>
-                    Selecciona una traza en el historial para inspeccionar su prompt, su
-                    respuesta y el desglose técnico.
+                    Selecciona una sesión en el historial para inspeccionar la conversación y el
+                    rendimiento del agente.
                 </Typography>
             </Box>
         </Stack>
     );
 }
 
-/* ----------------- Paneles laterales: Inspector de Payload ----------------- */
-
-function BloqueCodigo({ titulo, contenido }: { titulo: string; contenido: string }) {
-    const dmr = useTheme().dmr;
-
-    return (
-        <Box>
-            <Typography
-                sx={{
-                    ...dmr.typography.micro,
-                    color: dmr.textos.tertiary,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    mb: cssPx(dmr.spacing.xs),
-                }}
-            >
-                {titulo}
-            </Typography>
-            <Box
-                component="pre"
-                sx={{
-                    ...dmr.typography.xs,
-                    fontFamily: dmr.typography.fontFamily.numeric,
-                    color: dmr.textos.primary,
-                    bgcolor: dmr.superficies.background,
-                    border: `1px solid ${dmr.borders.subtle}`,
-                    borderRadius: cssPx(dmr.radius.sm),
-                    p: cssPx(dmr.spacing.md),
-                    m: 0,
-                    overflowX: "auto",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                }}
-            >
-                {contenido}
-            </Box>
-        </Box>
-    );
-}
+/* ------------------ Panel lateral: Detalle de Sesión (chat) ------------------ */
 
 function FilaTecnica({ etiqueta, valor }: { etiqueta: string; valor: string }) {
     const dmr = useTheme().dmr;
@@ -170,22 +136,29 @@ function FilaTecnica({ etiqueta, valor }: { etiqueta: string; valor: string }) {
     );
 }
 
-function InspectorPayload({ traza }: { traza: TraceLog }) {
+/** Reconstrucción forense de la sesión como ventana de chat. */
+function DetalleSesionChat({ traza }: { traza: TraceLog }) {
     const dmr = useTheme().dmr;
     const estado = estilosStatus(dmr)[traza.statusHttp];
+    const esFallo = traza.statusHttp === 429 || traza.statusHttp === 500;
 
     return (
         <Stack sx={{ gap: cssPx(dmr.density.comfortable.contentGap) }}>
+            {/* Cabecera del panel: título + ID y chips de estado y plataforma. */}
             <Stack
                 direction="row"
-                sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: cssPx(dmr.spacing.sm) }}
+                sx={{
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    gap: cssPx(dmr.spacing.sm),
+                }}
             >
                 <Box sx={{ minWidth: 0 }}>
                     <Typography
                         variant="overline"
                         sx={{ color: dmr.primary.default, letterSpacing: "0.12em" }}
                     >
-                        Inspector de Payload
+                        Detalle de Sesión
                     </Typography>
                     <Typography sx={{ ...dmr.typography.md, fontWeight: 600, color: dmr.textos.primary }}>
                         {traza.id}
@@ -208,7 +181,7 @@ function InspectorPayload({ traza }: { traza: TraceLog }) {
             <Stack direction="row" sx={{ gap: cssPx(dmr.spacing.sm), flexWrap: "wrap" }}>
                 <Chip
                     size="small"
-                    label={traza.modelo}
+                    label={traza.canal}
                     sx={{
                         height: dmr.medidas.microChips.medio,
                         fontSize: dmr.typography.micro.fontSize,
@@ -218,7 +191,7 @@ function InspectorPayload({ traza }: { traza: TraceLog }) {
                 />
                 <Chip
                     size="small"
-                    label={traza.backend}
+                    label={traza.asistente}
                     sx={{
                         height: dmr.medidas.microChips.medio,
                         fontSize: dmr.typography.micro.fontSize,
@@ -233,12 +206,113 @@ function InspectorPayload({ traza }: { traza: TraceLog }) {
 
             <Divider sx={{ borderColor: dmr.borders.subtle }} />
 
-            <BloqueCodigo titulo="Prompt del sistema" contenido={traza.payload.systemPrompt} />
-            <BloqueCodigo titulo="Prompt del usuario" contenido={traza.payload.userPrompt} />
-            <BloqueCodigo titulo="Respuesta (Completion)" contenido={traza.payload.completionText} />
+            {/* Ventana de chat: contexto, turno del cliente y respuesta del bot. */}
+            <Stack sx={{ gap: cssPx(dmr.spacing.lg), p: cssPx(dmr.spacing.md) }}>
+                {/* Mensaje 1: contexto / system prompt. */}
+                <Box
+                    sx={{
+                        alignSelf: "center",
+                        maxWidth: "90%",
+                        border: `1px dashed ${dmr.borders.subtle}`,
+                        borderRadius: cssPx(dmr.radius.sm),
+                        p: cssPx(dmr.spacing.sm),
+                    }}
+                >
+                    <Typography
+                        sx={{
+                            ...dmr.typography.micro,
+                            color: dmr.textos.tertiary,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            textAlign: "center",
+                        }}
+                    >
+                        Instrucciones de contexto del bot
+                    </Typography>
+                    <Typography
+                        sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary, textAlign: "center" }}
+                    >
+                        {traza.payload.contextoAsistente}
+                    </Typography>
+                </Box>
+
+                {/* Mensaje 2: burbuja del cliente (derecha). */}
+                <Stack
+                    sx={{
+                        alignSelf: "flex-end",
+                        maxWidth: "85%",
+                        gap: cssPx(dmr.spacing.xs),
+                        bgcolor: dmr.primary.default,
+                        borderRadius: cssPx(dmr.radius.lg),
+                        borderBottomRightRadius: 0,
+                        p: cssPx(dmr.spacing.md),
+                    }}
+                >
+                    <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.xs) }}>
+                        <User size={14} weight="fill" color={dmr.primary.foreground} aria-hidden="true" />
+                        <Typography
+                            sx={{ ...dmr.typography.micro, fontWeight: 600, color: dmr.primary.foreground }}
+                        >
+                            Cliente
+                        </Typography>
+                    </Stack>
+                    <Typography sx={{ ...dmr.typography.sm, color: dmr.primary.foreground }}>
+                        {traza.payload.mensajeCliente}
+                    </Typography>
+                </Stack>
+
+                {/* Mensaje 3: burbuja del asistente IA (izquierda). */}
+                <Stack
+                    sx={{
+                        alignSelf: "flex-start",
+                        maxWidth: "85%",
+                        gap: cssPx(dmr.spacing.xs),
+                        bgcolor: dmr.estados.ai.subtle,
+                        border: `1px solid ${dmr.estados.ai.default}`,
+                        borderRadius: cssPx(dmr.radius.lg),
+                        borderBottomLeftRadius: 0,
+                        p: cssPx(dmr.spacing.md),
+                    }}
+                >
+                    <Stack direction="row" sx={{ alignItems: "center", gap: cssPx(dmr.spacing.xs) }}>
+                        <Robot size={14} weight="fill" color={dmr.estados.ai.foreground} aria-hidden="true" />
+                        <Typography
+                            sx={{ ...dmr.typography.micro, fontWeight: 600, color: dmr.estados.ai.foreground }}
+                        >
+                            Asistente IA
+                        </Typography>
+                    </Stack>
+                    <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.primary }}>
+                        {traza.payload.respuestaAsistente}
+                    </Typography>
+                </Stack>
+
+                {/* Alerta de fallo: rate limit o error del servicio. */}
+                {esFallo ? (
+                    <Stack
+                        direction="row"
+                        sx={{
+                            alignSelf: "flex-start",
+                            alignItems: "center",
+                            gap: cssPx(dmr.spacing.sm),
+                            maxWidth: "85%",
+                            bgcolor: dmr.estados.error.subtle,
+                            color: dmr.estados.error.foreground,
+                            borderRadius: cssPx(dmr.radius.sm),
+                            p: cssPx(dmr.spacing.sm),
+                        }}
+                    >
+                        <WarningCircle size={16} weight="fill" aria-hidden="true" />
+                        <Typography sx={{ ...dmr.typography.xs, color: dmr.estados.error.foreground }}>
+                            El bot falló o la sesión fue escalada a un humano.
+                        </Typography>
+                    </Stack>
+                ) : null}
+            </Stack>
 
             <Divider sx={{ borderColor: dmr.borders.subtle }} />
 
+            {/* Pie del panel: desglose técnico de la conversación. */}
             <Box>
                 <Typography
                     variant="overline"
@@ -248,8 +322,8 @@ function InspectorPayload({ traza }: { traza: TraceLog }) {
                 </Typography>
                 <Stack sx={{ gap: cssPx(dmr.spacing.sm) }}>
                     <FilaTecnica etiqueta="Temperatura" valor={traza.payload.temperature.toFixed(1)} />
-                    <FilaTecnica etiqueta="Tokens entrada" valor={String(traza.payload.promptTokens)} />
-                    <FilaTecnica etiqueta="Tokens salida" valor={String(traza.payload.completionTokens)} />
+                    <FilaTecnica etiqueta="Tokens entrada" valor={String(traza.payload.tokensEntrada)} />
+                    <FilaTecnica etiqueta="Tokens salida" valor={String(traza.payload.tokensSalida)} />
                     <FilaTecnica etiqueta="Total tokens" valor={String(traza.totalTokens)} />
                     <FilaTecnica etiqueta="Latencia" valor={`${traza.latenciaMs} ms`} />
                     <FilaTecnica etiqueta="Costo estimado" valor={traza.payload.costo} />
@@ -261,11 +335,11 @@ function InspectorPayload({ traza }: { traza: TraceLog }) {
 
 /* ----------------------------- Página principal ----------------------------- */
 
-export function TracesPage() {
+export function ConversacionesPage() {
     const dmr = useTheme().dmr;
     const { setContenido, setAncho } = usePanelLateral();
     const [busqueda, setBusqueda] = useState("");
-    const [modeloFiltro, setModeloFiltro] = useState<"todos" | string>("todos");
+    const [canalFiltro, setCanalFiltro] = useState<"todos" | string>("todos");
     const [estadoFiltro, setEstadoFiltro] = useState<FiltroEstado>("todos");
     const [trazaSeleccionada, setTrazaSeleccionada] = useState<TraceLog | null>(null);
 
@@ -274,9 +348,9 @@ export function TracesPage() {
         queryFn: obtenerTrazas,
     });
 
-    const opcionesModelos = useMemo(() => {
-        const modelos = trazasQuery.data?.map((traza) => traza.modelo) ?? [];
-        return [...new Set(modelos)];
+    const opcionesCanales = useMemo(() => {
+        const canales = trazasQuery.data?.map((traza) => traza.canal) ?? [];
+        return [...new Set(canales)];
     }, [trazasQuery.data]);
 
     const trazasFiltradas = useMemo(() => {
@@ -288,24 +362,24 @@ export function TracesPage() {
             const coincideBusqueda =
                 coincideEstudio ||
                 traza.id.toLocaleLowerCase().includes(texto) ||
-                traza.modelo.toLocaleLowerCase().includes(texto) ||
-                traza.backend.toLocaleLowerCase().includes(texto);
-            const coincideModelo = modeloFiltro === "todos" || traza.modelo === modeloFiltro;
+                traza.canal.toLocaleLowerCase().includes(texto) ||
+                traza.asistente.toLocaleLowerCase().includes(texto);
+            const coincideModelo = canalFiltro === "todos" || traza.canal === canalFiltro;
             const coincideEstado = estadoFiltro === "todos" || traza.statusHttp === estadoFiltro;
 
             return coincideBusqueda && coincideModelo && coincideEstado;
         });
-    }, [trazasQuery.data, busqueda, modeloFiltro, estadoFiltro]);
+    }, [trazasQuery.data, busqueda, canalFiltro, estadoFiltro]);
 
-    // El SidePanel es global: aquí se pinta el inspector de la traza activa
-    // (o el estado vacío). La limpieza al desmontar evita heredar contenido.
-    // El inspector de payload prefiere un panel angosto (columna de lectura
-    // densa), dejando el ancho del workspace a la tabla; el estado vacío
-    // vuelve al ancho estándar y al desmontar se restaura todo.
+    // El SidePanel es global: aquí se pinta el chat forense de la sesión
+    // activa (o el estado vacío). La limpieza al desmontar evita heredar
+    // contenido. El chat forense prefiere un panel amplio para respirar
+    // las burbujas y el desglose técnico; el estado vacío vuelve al ancho
+    // estándar y al desmontar se restaura todo.
     useEffect(() => {
         if (trazaSeleccionada) {
-            setAncho("angosto");
-            setContenido(<InspectorPayload traza={trazaSeleccionada} />);
+            setAncho("ancho");
+            setContenido(<DetalleSesionChat traza={trazaSeleccionada} />);
         } else {
             setAncho("estandar");
             setContenido(<PanelEstadoVacio />);
@@ -322,14 +396,14 @@ export function TracesPage() {
             {/* 1. Header del módulo. */}
             <Box>
                 <Typography component="h1" sx={{ ...dmr.typography["3xl"], color: dmr.textos.primary }}>
-                    Explorador de Trazas
+                    Historial de Conversaciones
                 </Typography>
                 <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary, mt: cssPx(dmr.spacing.xs) }}>
-                    Traces &amp; Logs · historial de llamadas a los modelos de IA
+                    Auditoría de sesiones y resolución del Asistente IA
                 </Typography>
             </Box>
 
-            {/* 2. Barra de filtros vítrea: buscador, modelo y estado HTTP. */}
+            {/* 2. Barra de filtros vítrea: buscador, canal y estado. */}
             <Box
                 component="section"
                 sx={(theme) => ({
@@ -344,8 +418,8 @@ export function TracesPage() {
                     <OutlinedInput
                         value={busqueda}
                         onChange={(event) => setBusqueda(event.target.value)}
-                        placeholder="Buscar por ID, modelo o backend…"
-                        aria-label="Buscar traza"
+                        placeholder="Buscar por ID, canal o asistente…"
+                        aria-label="Buscar sesión"
                         startAdornment={
                             <InputAdornment position="start" sx={{ color: dmr.textos.secondary }}>
                                 <MagnifyingGlassIcon size={18} aria-hidden="true" />
@@ -355,10 +429,10 @@ export function TracesPage() {
                     />
 
                     <Select
-                        value={modeloFiltro}
-                        onChange={(event) => setModeloFiltro(event.target.value)}
+                        value={canalFiltro}
+                        onChange={(event) => setCanalFiltro(event.target.value)}
                         displayEmpty
-                        aria-label="Filtrar por modelo"
+                        aria-label="Filtrar por canal"
                         sx={{
                             minWidth: 220,
                             bgcolor: dmr.superficies.interactive,
@@ -375,10 +449,10 @@ export function TracesPage() {
                             },
                         }}
                     >
-                        <MenuItem value="todos">Todos los modelos</MenuItem>
-                        {opcionesModelos.map((modelo) => (
-                            <MenuItem key={modelo} value={modelo}>
-                                {modelo}
+                        <MenuItem value="todos">Todos los canales</MenuItem>
+                        {opcionesCanales.map((canal) => (
+                            <MenuItem key={canal} value={canal}>
+                                {canal}
                             </MenuItem>
                         ))}
                     </Select>
@@ -410,12 +484,12 @@ export function TracesPage() {
                     </Select>
 
                     <Typography sx={{ ...dmr.typography.micro, color: dmr.textos.tertiary, marginLeft: "auto" }}>
-                        {trazasFiltradas.length} de {trazasQuery.data?.length ?? 0} trazas
+                        {trazasFiltradas.length} de {trazasQuery.data?.length ?? 0} sesiones
                     </Typography>
                 </Stack>
             </Box>
 
-            {/* 3. Tabla de historial de llamadas (panel sólido estandarizado). */}
+            {/* 3. Tabla del historial de sesiones (panel sólido estandarizado). */}
             <Box
                 component="section"
                 sx={(theme) => ({
@@ -425,21 +499,21 @@ export function TracesPage() {
             >
                 {trazasQuery.isPending ? (
                     <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.tertiary }}>
-                        Cargando historial de trazas…
+                        Cargando historial de conversaciones…
                     </Typography>
                 ) : trazasQuery.isError ? (
                     <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.tertiary }}>
-                        No fue posible cargar el historial de trazas.
+                        No fue posible cargar el historial de conversaciones.
                     </Typography>
                 ) : (
                     <TableContainer>
-                        <Table size="small" aria-label="Historial de llamadas a modelos">
+                        <Table size="small" aria-label="Historial de conversaciones">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Traza</TableCell>
-                                    <TableCell>Modelo</TableCell>
+                                    <TableCell>Sesión</TableCell>
+                                    <TableCell>Canal / Asistente</TableCell>
                                     <TableCell align="right">Estado</TableCell>
-                                    <TableCell align="right">Latencia</TableCell>
+                                    <TableCell align="right">Duración</TableCell>
                                     <TableCell align="right">Tokens</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -488,12 +562,12 @@ export function TracesPage() {
                                                             color: dmr.textos.primary,
                                                         }}
                                                     >
-                                                        {traza.modelo}
+                                                        {traza.canal}
                                                     </Typography>
                                                     <Typography
                                                         sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}
                                                     >
-                                                        {traza.backend}
+                                                        {traza.asistente}
                                                     </Typography>
                                                 </Stack>
                                             </TableCell>
@@ -536,7 +610,7 @@ export function TracesPage() {
                                             <Typography
                                                 sx={{ ...dmr.typography.sm, color: dmr.textos.tertiary, py: cssPx(dmr.spacing.md) }}
                                             >
-                                                No hay trazas que coincidan con los filtros.
+                                                No hay sesiones que coincidan con los filtros.
                                             </Typography>
                                         </TableCell>
                                     </TableRow>
