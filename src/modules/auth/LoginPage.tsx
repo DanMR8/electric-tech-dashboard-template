@@ -4,7 +4,6 @@ import {
     EyeSlashIcon,
     KeyIcon,
     LockKeyIcon,
-    MoonStarsIcon,
     ShieldCheckIcon,
 } from "@phosphor-icons/react";
 import {
@@ -23,7 +22,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { ControlEsquemaColor } from "../../theme";
 import { AuthHttpError } from "./authApi";
 import { useLogin } from "./authQueries";
 import { loginPayloadSchema, type LoginPayload } from "./authSchemas";
@@ -126,56 +124,6 @@ export function LoginPage() {
                 ].join(", "),
             })}
         >
-            <Box
-                sx={(theme) => ({
-                    position: "absolute",
-                    top: {
-                        xs: `${theme.dmr.spacing.lg}px`,
-                        md: `${theme.dmr.spacing.xl}px`,
-                    },
-                    right: {
-                        xs: `${theme.dmr.spacing.lg}px`,
-                        md: `${theme.dmr.spacing.xl}px`,
-                    },
-                })}
-            >
-                <ControlEsquemaColor>
-                    {({ esquema, setEsquema }) => (
-                        <Stack
-                            direction="row"
-                            sx={(theme) => ({
-                                alignItems: "center",
-                                gap: `${theme.dmr.spacing.xs}px`,
-                                p: `${theme.dmr.spacing.xs}px`,
-                                bgcolor: theme.dmr.glass.background,
-                                border: `1px solid ${theme.dmr.glass.border}`,
-                                borderRadius: `${theme.dmr.radius.pill}px`,
-                                boxShadow: theme.dmr.elevation.floating,
-                                backdropFilter: `blur(${theme.dmr.glass.blur}) saturate(${theme.dmr.glass.saturate})`,
-                            })}
-                        >
-                            <MoonStarsIcon size={18} aria-hidden="true" />
-                            <Button
-                                size="small"
-                                variant={esquema === "dark" ? "contained" : "text"}
-                                onClick={() => setEsquema("dark")}
-                                aria-pressed={esquema === "dark"}
-                            >
-                                Dark
-                            </Button>
-                            <Button
-                                size="small"
-                                variant={esquema === "deepDark" ? "contained" : "text"}
-                                onClick={() => setEsquema("deepDark")}
-                                aria-pressed={esquema === "deepDark"}
-                            >
-                                Deep
-                            </Button>
-                        </Stack>
-                    )}
-                </ControlEsquemaColor>
-            </Box>
-
             <Paper
                 elevation={0}
                 sx={(theme) => ({
@@ -222,37 +170,16 @@ export function LoginPage() {
                                 variant="overline"
                                 sx={(theme) => ({ color: theme.dmr.primary.default })}
                             >
-                                VOLTDASH WEB
+                                VOLTDASH
                             </Typography>
                             <Typography component="h1" variant="h3" sx={{ mt: 1 }}>
-                                Inteligencia financiera, acceso seguro.
+                                El centro de operaciones de tu asistente de IA.
                             </Typography>
                             <Typography sx={(theme) => ({ mt: 2, maxWidth: 400, color: theme.dmr.textos.secondary })}>
                                 Vista de demostración autocontenida: las credenciales se validan
                                 en el navegador, sin necesidad de un servidor.
                             </Typography>
                         </Box>
-                    </Stack>
-
-                    <Stack sx={(theme) => ({ gap: `${theme.dmr.spacing.sm}px` })}>
-                        {[
-                            "Sin dependencia de backend",
-                            "Sesión persistida localmente en el navegador",
-                            "Credenciales de ejemplo visibles en el formulario",
-                        ].map((item) => (
-                            <Stack
-                                key={item}
-                                direction="row"
-                                sx={(theme) => ({
-                                    alignItems: "center",
-                                    gap: `${theme.dmr.spacing.sm}px`,
-                                    color: theme.dmr.textos.secondary,
-                                })}
-                            >
-                                <ShieldCheckIcon size={17} weight="fill" color="currentColor" aria-hidden="true" />
-                                <Typography variant="body2">{item}</Typography>
-                            </Stack>
-                        ))}
                     </Stack>
                 </Box>
 

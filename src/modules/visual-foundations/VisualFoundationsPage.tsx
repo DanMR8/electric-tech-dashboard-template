@@ -14,7 +14,6 @@ import {
     LinearProgress,
     MenuItem,
     Stack,
-    Switch,
     Table,
     TableBody,
     TableCell,
@@ -29,7 +28,7 @@ import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 
 // Importaciones relativas de tu tema local
-import { ControlEsquemaColor, crearTemaEcharts } from "../../theme";
+import { crearTemaEcharts } from "../../theme";
 import { cssPx, glassPanelStyles, solidPanelStyles } from "../../shared/styles/superficies";
 import {
     GlassToolbar,
@@ -1014,40 +1013,6 @@ export function VisualFoundationsPage() {
                         </Box>
 
                         <Stack sx={{ minWidth: { xs: 0, lg: 320 }, gap: cssPx(dmr.spacing.md) }}>
-                            <ControlEsquemaColor>
-                                {({ esquema, setEsquema }) => (
-                                    <Box
-                                        sx={{
-                                            p: cssPx(dmr.spacing.sm),
-                                            borderRadius: cssPx(dmr.radius.md),
-                                            backgroundColor: dmr.superficies.interactive,
-                                            border: `1px solid ${dmr.borders.default}`,
-                                            boxShadow: `inset 0 1px 0 ${dmr.glass.highlight}`,
-                                        }}
-                                    >
-                                        <Stack
-                                            direction="row"
-                                            sx={{
-                                                alignItems: "center",
-                                                justifyContent: "space-between",
-                                                gap: cssPx(dmr.spacing.md),
-                                            }}
-                                        >
-                                            <Box>
-                                                <Typography sx={{ ...dmr.typography.sm, fontWeight: 600 }}>Modo Visual</Typography>
-                                                <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>
-                                                    {esquema === "deepDark" ? "Contraste Alto" : "Análisis Base"}
-                                                </Typography>
-                                            </Box>
-                                            <Switch
-                                                checked={esquema === "deepDark"}
-                                                onChange={(_, checked) => setEsquema(checked ? "deepDark" : "dark")}
-                                            />
-                                        </Stack>
-                                    </Box>
-                                )}
-                            </ControlEsquemaColor>
-
                             <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: cssPx(dmr.spacing.sm) }}>
                                 {[
                                     ["12.4k", "Clientes"],
