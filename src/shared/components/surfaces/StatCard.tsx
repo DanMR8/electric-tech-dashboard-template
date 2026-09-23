@@ -1,5 +1,5 @@
 import { Box, Card, Stack, Typography, Chip, useTheme } from "@mui/material";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 import { cssPx, solidPanelStyles } from "../../styles/superficies";
 
@@ -13,8 +13,8 @@ interface SparklineProps {
 
 function Sparkline({ points, color }: SparklineProps) {
     const { dmr } = useTheme();
-    // Generamos un ID seguro para el gradiente
-    const id = `sparkline-${color.replace(/[^a-zA-Z0-9]/g, "")}-${Math.random().toString(36).substring(2, 9)}`;
+    // ID estable y sin ':' (los ':' invalidan el selector de fragmento `url(#…)`).
+    const gradienteId = useId().replace(/:/g, "");
     const min = Math.min(...points);
     const max = Math.max(...points);
     const range = Math.max(max - min, 1);
@@ -35,12 +35,12 @@ function Sparkline({ points, color }: SparklineProps) {
             style={{ display: "block", width: "100%", height: dmr.medidas.decorativos.sparklineAlto }}
         >
             <defs>
-                <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradienteId} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={color} stopOpacity="0.26" />
                     <stop offset="100%" stopColor={color} stopOpacity="0" />
                 </linearGradient>
             </defs>
-            <polygon points={`0,36 ${linePoints} 120,36`} fill={`url(#${id})`} />
+            <polygon points={`0,36 ${linePoints} 120,36`} fill={`url(#${gradienteId})`} />
             <polyline
                 points={linePoints}
                 fill="none"
@@ -75,26 +75,29 @@ export interface StatCardProps {
 }
 
 export function StatCard({
-                             label,
-                             value,
-                             meta,
-                             glyph,
-                             variationValue,
-                             variationIsPositive,
-                             accentColor,
-                             softAccentColor,
-                             valueColor,
-                             sparklinePoints,
-                         }: StatCardProps) {
+    label,
+    value,
+    meta,
+    glyph,
+    variationValue,
+    variationIsPositive,
+    accentColor,
+    softAccentColor,
+    valueColor,
+    sparklinePoints,
+}: StatCardProps) {
     const theme = useTheme();
     const { dmr } = theme;
 
-    // Lógica para la variación tipo "Chip"
+    // La variación: el signo refleja el valor numérico (+ positivo, sin signo
+    // negativo) y el color deriva de si es una mejora o un detrimento, de forma
+    // independiente (una latencia +5% se pinta error con signo '+', por ejemplo).
     const hasVariationChip = variationValue !== undefined;
-    const isPositive = variationIsPositive ?? (variationValue !== undefined && variationValue > 0);
-    const variationColorConfig = isPositive
-        ? { bg: dmr.estados.success.subtle, text: dmr.estados.success.foreground, sign: variationValue && variationValue > 0 ? "+" : "" }
-        : { bg: dmr.estados.error.subtle, text: dmr.estados.error.foreground, sign: "" };
+    const esMejora = variationIsPositive ?? (hasVariationChip && variationValue > 0);
+    const signoVariacion = hasVariationChip && variationValue > 0 ? "+" : "";
+    const estiloVariacion = esMejora
+        ? { bg: dmr.estados.success.subtle, texto: dmr.estados.success.foreground }
+        : { bg: dmr.estados.error.subtle, texto: dmr.estados.error.foreground };
 
     return (
         <Card
@@ -150,12 +153,12 @@ export function StatCard({
                         {hasVariationChip && (
                             <Chip
                                 size="small"
-                                label={`${variationColorConfig.sign}${variationValue?.toFixed(1)}%`}
+                                label={`${signoVariacion}${variationValue.toFixed(1)}%`}
                                 sx={{
                                     height: dmr.medidas.microChips.chico,
                                     fontSize: dmr.typography.micro.fontSize,
-                                    bgcolor: variationColorConfig.bg,
-                                    color: variationColorConfig.text,
+                                    bgcolor: estiloVariacion.bg,
+                                    color: estiloVariacion.texto,
                                 }}
                             />
                         )}

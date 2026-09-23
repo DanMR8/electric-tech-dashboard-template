@@ -11,11 +11,11 @@ export interface GlassToolbarProps {
 }
 
 export function GlassToolbar({
-                                 children,
-                                 glassColor,
-                                 component = "section",
-                                 compact = false
-                             }: GlassToolbarProps) {
+    children,
+    glassColor,
+    component = "section",
+    compact = false,
+}: GlassToolbarProps) {
     const theme = useTheme();
     const defaultColor = glassColor || theme.dmr.primary.subtle;
 

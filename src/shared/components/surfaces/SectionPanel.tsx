@@ -72,12 +72,12 @@ export interface SectionPanelProps {
 }
 
 export function SectionPanel({
-                                 children,
-                                 variant = "solid",
-                                 glassColor,
-                                 header,
-                                 noPadding = false
-                             }: SectionPanelProps) {
+    children,
+    variant = "solid",
+    glassColor,
+    header,
+    noPadding = false,
+}: SectionPanelProps) {
     const theme = useTheme();
     const { dmr } = theme;
 

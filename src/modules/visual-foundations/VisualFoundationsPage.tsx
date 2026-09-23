@@ -25,12 +25,18 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 
 // Importaciones relativas de tu tema local
 import { ControlEsquemaColor, crearTemaEcharts } from "../../theme";
 import { cssPx, glassPanelStyles, solidPanelStyles } from "../../shared/styles/superficies";
+import {
+    GlassToolbar,
+    SectionHeader,
+    SectionPanel,
+    StatCard,
+} from "../../shared/components/surfaces";
 
 // const magnitudes = ["xs", "sm", "md", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl"] as const;
 const magnitudesNumericas = ["md", "xl", "3xl", "5xl"] as const;
@@ -45,214 +51,6 @@ const magnitudesNumericas = ["md", "xl", "3xl", "5xl"] as const;
 // 1. UTILIDADES DE ESTILOS BASE
 // glassPanelStyles y solidPanelStyles viven en src/shared/styles/superficies.ts
 // (precedente de estandarización no formalizado).
-function SectionHeading({
-    eyebrow,
-    title,
-    description,
-    action,
-}: {
-    eyebrow: string;
-    title: string;
-    description?: string;
-    action?: ReactNode;
-}) {
-    return (
-        <Stack
-            direction={{ xs: "column", sm: "row" }}
-            sx={(theme) => ({
-                gap: cssPx(theme.dmr.spacing.md),
-                alignItems: { xs: "flex-start", sm: "flex-end" },
-                justifyContent: "space-between",
-            })}
-        >
-            <Box sx={{ minWidth: 0 }}>
-                <Typography
-                    component="p"
-                    sx={(theme) => ({
-                        ...theme.dmr.typography.xs,
-                        color: theme.dmr.primary.default,
-                        fontWeight: 700,
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                    })}
-                >
-                    {eyebrow}
-                </Typography>
-                <Typography
-                    component="h2"
-                    sx={(theme) => ({
-                        ...theme.dmr.typography["2xl"],
-                        mt: cssPx(theme.dmr.spacing.xs),
-                    })}
-                >
-                    {title}
-                </Typography>
-                {description ? (
-                    <Typography
-                        sx={(theme) => ({
-                            ...theme.dmr.typography.sm,
-                            color: theme.dmr.textos.secondary,
-                            mt: cssPx(theme.dmr.spacing.xs),
-                            maxWidth: 760,
-                        })}
-                    >
-                        {description}
-                    </Typography>
-                ) : null}
-            </Box>
-            {action}
-        </Stack>
-    );
-}
-
-function Sparkline({
-    points,
-    color,
-}: {
-    points: readonly number[];
-    color: string;
-}) {
-    const { dmr } = useTheme();
-    const id = useId().replace(/:/g, "");
-    const min = Math.min(...points);
-    const max = Math.max(...points);
-    const range = Math.max(max - min, 1);
-
-    const linePoints = points
-        .map((value, index) => {
-            const x = (index / (points.length - 1)) * 120;
-            const y = 32 - ((value - min) / range) * 26;
-            return `${x},${y}`;
-        })
-        .join(" ");
-
-    return (
-        <svg
-            viewBox="0 0 120 36"
-            role="presentation"
-            aria-hidden="true"
-            style={{ display: "block", width: "100%", height: dmr.medidas.decorativos.sparklineAlto }}
-        >
-            <defs>
-                <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity="0.26" />
-                    <stop offset="100%" stopColor={color} stopOpacity="0" />
-                </linearGradient>
-            </defs>
-            <polygon points={`0,36 ${linePoints} 120,36`} fill={`url(#${id})`} />
-            <polyline
-                points={linePoints}
-                fill="none"
-                stroke={color}
-                strokeWidth={dmr.medidas.trazos.sparkline}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </svg>
-    );
-}
-
-function MetricCard({
-    label,
-    value,
-    meta,
-    glyph,
-    accent,
-    softAccent,
-    valueColor,
-    points,
-}: {
-    label: string;
-    value: string;
-    meta: string;
-    glyph: ReactNode;
-    accent: string;
-    softAccent: string;
-    valueColor: string;
-    points: readonly number[];
-}) {
-    return (
-        <Box
-            sx={(theme) => ({
-                ...solidPanelStyles(theme),
-                p: cssPx(theme.dmr.density.default.cardPadding),
-                backgroundImage: `radial-gradient(circle at 100% 0%, ${softAccent}, transparent 48%)`,
-                transition: theme.transitions.create(["transform", "border-color", "box-shadow"], {
-                    duration: theme.dmr.motion.duration.fast,
-                    easing: theme.dmr.motion.easing.standard,
-                }),
-                "&:hover": {
-                    transform: "translateY(-2px)",
-                    borderColor: accent,
-                    boxShadow: `${theme.dmr.elevation.card}, 0 16px 48px ${softAccent}`,
-                },
-            })}
-        >
-            <Stack
-                direction="row"
-                sx={(activeTheme) => ({
-                    alignItems: "flex-start",
-                    justifyContent: "space-between",
-                    gap: cssPx(activeTheme.dmr.spacing.md),
-                })}
-            >
-                <Box sx={{ minWidth: 0 }}>
-                    <Typography
-                        sx={(theme) => ({
-                            ...theme.dmr.typography.sm,
-                            color: theme.dmr.textos.secondary,
-                        })}
-                    >
-                        {label}
-                    </Typography>
-                    <Typography
-                        sx={(theme) => ({
-                            ...theme.dmr.typography.numeric["2xl"],
-                            color: valueColor,
-                            mt: cssPx(theme.dmr.spacing.xs),
-                            whiteSpace: "nowrap",
-                        })}
-                    >
-                        {value}
-                    </Typography>
-                    <Typography
-                        sx={(theme) => ({
-                            ...theme.dmr.typography.xs,
-                            color: accent,
-                            mt: cssPx(theme.dmr.spacing.xs),
-                        })}
-                    >
-                        {meta}
-                    </Typography>
-                </Box>
-                <Box
-                    sx={(theme) => ({
-                        width: theme.dmr.spacing["2xl"],
-                        height: theme.dmr.spacing["2xl"],
-                        flex: "0 0 auto",
-                        display: "grid",
-                        placeItems: "center",
-                        borderRadius: cssPx(theme.dmr.radius.sm),
-                        color: accent,
-                        backgroundColor: softAccent,
-                        border: `1px solid ${accent}`,
-                        boxShadow: `0 0 26px ${softAccent}`,
-                    })}
-                >
-                    <Typography
-                        sx={(theme) => ({ ...theme.dmr.typography.sm, fontWeight: 700, display: "inline-flex", alignItems: "center" })}
-                    >
-                        {glyph}
-                    </Typography>
-                </Box>
-            </Stack>
-            <Box sx={(activeTheme) => ({ mt: cssPx(activeTheme.dmr.spacing.sm) })}>
-                <Sparkline points={points} color={accent} />
-            </Box>
-        </Box>
-    );
-}
-
 function GraficaTiempoRespuesta() {
     const containerRef = useRef<HTMLDivElement>(null);
     const theme = useTheme();
@@ -272,7 +70,12 @@ function GraficaTiempoRespuesta() {
         }
 
         chart = echarts.init(container, crearTemaEcharts(dmr), {
-            renderer: "svg", // Mantenemos SVG para una responsividad nítida en móviles
+            // Mantenemos SVG para una responsividad nítida en móviles. useDirtyRect
+            // debe quedar desactivado: en el renderer SVG de ECharts (useDirtyRect
+            // activo por defecto) el axisPointer del hover no se repinta tras el
+            // primer frame y la línea punteada queda congelada sin moverse.
+            renderer: "svg",
+            useDirtyRect: false,
         });
 
         chart.setOption({
@@ -291,9 +94,21 @@ function GraficaTiempoRespuesta() {
             },
 
             // 3. Tooltip Integrado
-            // Se inyecta la tipografía base y colores textuales para que no se sienta genérico.
+            // Configuración del puntero idéntica a 'Interacciones por Canal'
+            // (E-commerce): línea punteada que sigue al cursor y desaparece al salir.
             tooltip: {
                 trigger: "axis",
+                axisPointer: {
+                    type: "line",
+                    lineStyle: {
+                        type: "dashed",
+                        color: dmr.borders.focus,
+                        width: dmr.medidas.trazos.fino,
+                    },
+                },
+                // Evita que el tooltip desborde la tarjeta del dashboard.
+                confine: true,
+                // Se inyecta la tipografía base y colores textuales para que no se sienta genérico.
                 backgroundColor: dmr.glass.background,
                 borderColor: dmr.borders.subtle,
                 padding: [dmr.spacing.sm, dmr.spacing.md],
@@ -301,13 +116,6 @@ function GraficaTiempoRespuesta() {
                     color: dmr.textos.primary,
                     fontFamily: dmr.typography.fontFamily.base,
                     fontSize: dmr.medidas.textoCanvas,
-                },
-                axisPointer: {
-                    type: "line",
-                    lineStyle: {
-                        color: dmr.borders.focus,
-                        type: "dashed",
-                    },
                 },
                 extraCssText: [
                     `backdrop-filter: blur(${dmr.glass.blur}) saturate(${dmr.glass.saturate})`,
@@ -392,15 +200,13 @@ function GraficaTiempoRespuesta() {
                             ],
                         },
                     },
-                    // 5. Interacción visual (Hover)
-                    // Hace que la línea brille más cuando el usuario enfoca los datos.
+                    // Interacción igual a 'Interacciones por Canal' (E-commerce):
+                    // sin emphasis personalizado, para que la línea punteada del
+                    // hover (axisPointer) se repinte y se oculte correctamente.
                     emphasis: {
-                        focus: "series",
-                        itemStyle: {
-                            shadowBlur: dmr.medidas.neones.suave,
-                            shadowColor: dmr.primary.subtle,
-                        }
-                    }
+                        focus: "none" as const,
+                        disabled: true,
+                    },
                 },
                 {
                     name: "SLA Máximo Permitido (800 ms)",
@@ -417,21 +223,33 @@ function GraficaTiempoRespuesta() {
                     itemStyle: {
                         color: dmr.estados.error.default,
                     },
+                    emphasis: {
+                        focus: "none" as const,
+                        disabled: true,
+                    },
                 },
             ],
         });
 
         // 6. Fluidez de Redimensionamiento
         // Envolver resize en requestAnimationFrame evita bloqueos de UI al redimensionar.
-        const resizeObserver = new ResizeObserver(() => {
+        // 'desmontado' impide que un frame pendiente toque una instancia ya dispuesta
+        // (p. ej. al cambiar de esquema de color en medio de un resize).
+        let desmontado = false;
+
+        const onResize = () => {
+            if (desmontado) return;
             window.requestAnimationFrame(() => {
                 chart?.resize();
             });
-        });
+        };
+
+        const resizeObserver = new ResizeObserver(onResize);
 
         resizeObserver.observe(container);
 
         return () => {
+            desmontado = true;
             resizeObserver.disconnect();
             chart?.dispose();
         };
@@ -474,6 +292,7 @@ function GraficaEmbudoConversion() {
 
         chart = echarts.init(container, crearTemaEcharts(dmr), {
             renderer: "svg",
+            useDirtyRect: false,
         });
 
         // Escala de conversión: cada etapa expresa porcentaje de las visitas totales.
@@ -493,9 +312,12 @@ function GraficaEmbudoConversion() {
         chart.setOption({
             animationDuration: dmr.motion.duration.normal,
             animationEasing: "cubicOut",
+            animationDurationUpdate: 150,
 
             tooltip: {
                 trigger: "item",
+                position: "top",
+                confine: true,
                 backgroundColor: dmr.glass.background,
                 borderColor: dmr.borders.subtle,
                 padding: [dmr.spacing.sm, dmr.spacing.md],
@@ -528,7 +350,7 @@ function GraficaEmbudoConversion() {
                     minSize: "15%",
                     maxSize: "100%",
                     sort: "descending",
-                    gap: dmr.spacing.xs,
+                    gap: 0,
                     label: {
                         position: "inside",
                         color: "#fff",
@@ -541,13 +363,8 @@ function GraficaEmbudoConversion() {
                         borderWidth: 2,
                     },
                     emphasis: {
-                        focus: "self" as const,
-                        itemStyle: {
-                            borderColor: dmr.textos.primary,
-                            borderWidth: 2,
-                            shadowBlur: dmr.medidas.neones.suave,
-                            shadowColor: dmr.primary.subtle,
-                        },
+                        focus: "none" as const,
+                        disabled: true,
                     },
                     data: datos,
                 },
@@ -600,6 +417,7 @@ function GraficaHeatmapHorarios() {
 
         chart = echarts.init(container, crearTemaEcharts(dmr), {
             renderer: "svg",
+            useDirtyRect: false,
         });
 
         // Días de la semana y horas del día para la malla del heatmap.
@@ -624,11 +442,14 @@ function GraficaHeatmapHorarios() {
         });
 
         chart.setOption({
-            animationDuration: dmr.motion.duration.normal,
+animationDuration: dmr.motion.duration.normal,
             animationEasing: "cubicOut",
+            animationDurationUpdate: 150,
 
             tooltip: {
+                trigger: "item",
                 position: "top",
+                confine: true,
                 backgroundColor: dmr.glass.background,
                 borderColor: dmr.borders.subtle,
                 padding: [dmr.spacing.sm, dmr.spacing.md],
@@ -768,6 +589,7 @@ function GraficaRadarPerfil() {
 
         chart = echarts.init(container, crearTemaEcharts(dmr), {
             renderer: "svg",
+            useDirtyRect: false,
         });
 
         chart.setOption({
@@ -776,6 +598,8 @@ function GraficaRadarPerfil() {
 
             tooltip: {
                 trigger: "item",
+                position: "top",
+                confine: true,
                 backgroundColor: dmr.glass.background,
                 borderColor: dmr.borders.subtle,
                 padding: [dmr.spacing.sm, dmr.spacing.md],
@@ -852,6 +676,10 @@ function GraficaRadarPerfil() {
                         color: dmr.primary.subtle,
                         opacity: 0.7,
                     },
+                    emphasis: {
+                        focus: "none" as const,
+                        disabled: true,
+                    },
                 },
                 {
                     name: "Soporte Humano Promedio",
@@ -874,6 +702,10 @@ function GraficaRadarPerfil() {
                     areaStyle: {
                         color: dmr.estados.ai.subtle,
                         opacity: 0.6,
+                    },
+                    emphasis: {
+                        focus: "none" as const,
+                        disabled: true,
                     },
                 },
             ],
@@ -1120,16 +952,7 @@ export function VisualFoundationsPage() {
                 }}
             >
                 {/* 1. HEADER */}
-                <Box
-                    component="header"
-                    sx={(activeTheme) => ({
-                        ...glassPanelStyles(activeTheme, activeTheme.dmr.primary.subtle),
-                        p: {
-                            xs: cssPx(activeTheme.dmr.spacing.lg),
-                            md: cssPx(activeTheme.dmr.spacing.xl),
-                        },
-                    })}
-                >
+                <GlassToolbar component="header" glassColor={dmr.primary.subtle}>
                     <Stack
                         direction={{ xs: "column", lg: "row" }}
                         sx={{
@@ -1248,7 +1071,7 @@ export function VisualFoundationsPage() {
                             </Box>
                         </Stack>
                     </Stack>
-                </Box>
+                </GlassToolbar>
 
                 {/* 2. TIEMPO DE RESPUESTA Y DISTRIBUCIÓN DE CANALES */}
                 <Box
@@ -1262,31 +1085,33 @@ export function VisualFoundationsPage() {
                         alignItems: "stretch",
                     }}
                 >
-                    <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
-                        <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) } }}>
-                            <SectionHeading
-                                eyebrow="Soporte en Vivo"
-                                title="Tiempo de Respuesta del Asistente"
-                                description="Revisión analítica del tiempo medio de respuesta del soporte frente al SLA máximo permitido (800 ms)."
-                                action={
-                                    <Box sx={{ display: "flex", gap: cssPx(dmr.spacing.xs), p: cssPx(dmr.spacing.xs), borderRadius: cssPx(dmr.radius.sm), bgcolor: dmr.superficies.interactive }}>
-                                        {["15m", "1h", "24h", "7d"].map((period) => (
-                                            <Button key={period} size="small" variant={period === "1h" ? "contained" : "text"} sx={{ minWidth: 44 }}>
-                                                {period}
-                                            </Button>
-                                        ))}
-                                    </Box>
-                                }
-                            />
-                            <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
-                                <GraficaTiempoRespuesta />
-                            </Box>
-                        </Box>
-                    </Box>
+                    <SectionPanel
+                        header={{
+                            eyebrow: "Soporte en Vivo",
+                            title: "Tiempo de Respuesta del Asistente",
+                            description: "Revisión analítica del tiempo medio de respuesta del soporte frente al SLA máximo permitido (800 ms).",
+                            action: (
+                                <Box sx={{ display: "flex", gap: cssPx(dmr.spacing.xs), p: cssPx(dmr.spacing.xs), borderRadius: cssPx(dmr.radius.sm), bgcolor: dmr.superficies.interactive }}>
+                                    {["15m", "1h", "24h", "7d"].map((period) => (
+                                        <Button key={period} size="small" variant={period === "1h" ? "contained" : "text"} sx={{ minWidth: 44 }}>
+                                            {period}
+                                        </Button>
+                                    ))}
+                                </Box>
+                            ),
+                        }}
+                    >
+                        <GraficaTiempoRespuesta />
+                    </SectionPanel>
 
-                    <Box sx={(activeTheme) => ({ ...solidPanelStyles(activeTheme), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Canales" title="Distribución de Canales" description="Proporción de interacciones atendidas por cada canal de venta y soporte." />
-                        <Box sx={{ display: "flex", flexDirection: "column", gap: cssPx(dmr.spacing.xl), mt: cssPx(dmr.spacing.xl), alignItems: "center" }}>
+                    <SectionPanel
+                        header={{
+                            eyebrow: "Canales",
+                            title: "Distribución de Canales",
+                            description: "Proporción de interacciones atendidas por cada canal de venta y soporte.",
+                        }}
+                    >
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: cssPx(dmr.spacing.xl), alignItems: "center" }}>
                             <Box
                                 sx={{
                                     position: "relative",
@@ -1335,7 +1160,7 @@ export function VisualFoundationsPage() {
                                 ))}
                             </Stack>
                         </Box>
-                    </Box>
+                    </SectionPanel>
                 </Box>
 
                 {/* 2b. EMBUDO DE CONVERSIÓN + DENSIDAD DE INTERACCIONES POR HORARIO */}
@@ -1350,31 +1175,25 @@ export function VisualFoundationsPage() {
                         alignItems: "stretch",
                     }}
                 >
-                    <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
-                        <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) } }}>
-                            <SectionHeading
-                                eyebrow="Conversión"
-                                title="Embudo de Conversión"
-                                description="Recorrido del cliente desde la visita hasta la venta cerrada, con la aportación del asistente IA en cada etapa."
-                            />
-                            <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
-                                <GraficaEmbudoConversion />
-                            </Box>
-                        </Box>
-                    </Box>
+                    <SectionPanel
+                        header={{
+                            eyebrow: "Conversión",
+                            title: "Embudo de Conversión",
+                            description: "Recorrido del cliente desde la visita hasta la venta cerrada, con la aportación del asistente IA en cada etapa.",
+                        }}
+                    >
+                        <GraficaEmbudoConversion />
+                    </SectionPanel>
 
-                    <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
-                        <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) } }}>
-                            <SectionHeading
-                                eyebrow="Volumen por Horario"
-                                title="Densidad de Interacciones por Horario"
-                                description="Mapa de calor de la demanda del asistente: picos laborales entre 10h y 18h con demanda mínima nocturna."
-                            />
-                            <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
-                                <GraficaHeatmapHorarios />
-                            </Box>
-                        </Box>
-                    </Box>
+                    <SectionPanel
+                        header={{
+                            eyebrow: "Volumen por Horario",
+                            title: "Densidad de Interacciones por Horario",
+                            description: "Mapa de calor de la demanda del asistente: picos laborales entre 10h y 18h con demanda mínima nocturna.",
+                        }}
+                    >
+                        <GraficaHeatmapHorarios />
+                    </SectionPanel>
                 </Box>
 
                 {/* 3. MÉTRICAS DE OPERACIÓN COMERCIAL */}
@@ -1390,7 +1209,17 @@ export function VisualFoundationsPage() {
                     }}
                 >
                     {metricasComerciales.map((metric) => (
-                        <MetricCard key={metric.label} {...metric} />
+                        <StatCard
+                            key={metric.label}
+                            label={metric.label}
+                            value={metric.value}
+                            meta={metric.meta}
+                            glyph={metric.glyph}
+                            accentColor={metric.accent}
+                            softAccentColor={metric.softAccent}
+                            valueColor={metric.valueColor}
+                            sparklinePoints={metric.points}
+                        />
                     ))}
                 </Box>
 
@@ -1407,8 +1236,8 @@ export function VisualFoundationsPage() {
                     }}
                 >
                     <Box sx={(activeTheme) => solidPanelStyles(activeTheme)}>
-                        <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) }, pb: cssPx(dmr.spacing.md) }}>
-                            <SectionHeading
+                        <Box sx={{ p: { xs: cssPx(dmr.spacing.lg), md: cssPx(dmr.spacing.xl) }, pb: 0 }}>
+                            <SectionHeader
                                 eyebrow="Equipo de Atención"
                                 title="Rendimiento de Agentes"
                                 description="Datos agregados del desempeño de los agentes automáticos y humanos durante el periodo seleccionado."
@@ -1510,17 +1339,14 @@ export function VisualFoundationsPage() {
                         alignItems: "stretch",
                     }}
                 >
-                    <Box
-                        sx={(activeTheme) => ({
-                            ...glassPanelStyles(activeTheme, activeTheme.dmr.primary.subtle),
-                            p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) },
-                        })}
-                    >
-                        <SectionHeading
-                            eyebrow="Perfil de Rendimiento"
-                            title="Radar de Capacidades del Agente"
-                            description="Comparación entre el asistente IA y el soporte humano promedio en las métricas de calidad del negocio."
-                            action={
+                    <SectionPanel
+                        variant="glass"
+                        glassColor={dmr.primary.subtle}
+                        header={{
+                            eyebrow: "Perfil de Rendimiento",
+                            title: "Radar de Capacidades del Agente",
+                            description: "Comparación entre el asistente IA y el soporte humano promedio en las métricas de calidad del negocio.",
+                            action: (
                                 <Box
                                     sx={{
                                         width: dmr.spacing["2xl"],
@@ -1537,19 +1363,18 @@ export function VisualFoundationsPage() {
                                 >
                                     <Target size={20} weight="fill" aria-hidden="true" />
                                 </Box>
-                            }
-                        />
-                        <Box sx={{ mt: cssPx(dmr.spacing.lg) }}>
-                            <GraficaRadarPerfil />
-                        </Box>
-                    </Box>
+                            ),
+                        }}
+                    >
+                        <GraficaRadarPerfil />
+                    </SectionPanel>
 
-                    <Box sx={(activeTheme) => ({ ...solidPanelStyles(activeTheme), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading
-                            eyebrow="Auditoría en Vivo"
-                            title="Timeline del Ticket #R-8821"
-                            description="Seguimiento de una devolución atendida por el bot y escalada a finanzas para el cierre."
-                            action={
+                    <SectionPanel
+                        header={{
+                            eyebrow: "Auditoría en Vivo",
+                            title: "Timeline del Ticket #R-8821",
+                            description: "Seguimiento de una devolución atendida por el bot y escalada a finanzas para el cierre.",
+                            action: (
                                 <Box
                                     sx={{
                                         width: dmr.spacing["2xl"],
@@ -1565,12 +1390,11 @@ export function VisualFoundationsPage() {
                                 >
                                     <Clock size={20} weight="fill" aria-hidden="true" />
                                 </Box>
-                            }
-                        />
-                        <Box sx={{ mt: cssPx(dmr.spacing.xl) }}>
-                            <TimelineActividad eventos={eventosTicket} />
-                        </Box>
-                    </Box>
+                            ),
+                        }}
+                    >
+                        <TimelineActividad eventos={eventosTicket} />
+                    </SectionPanel>
                 </Box>
 
                 {/* 5. FILTROS DE OPERACIÓN Y TIPOGRAFÍA */}
@@ -1581,10 +1405,10 @@ export function VisualFoundationsPage() {
                         gap: cssPx(dmr.spacing.xl),
                     }}
                 >
-                    <Box sx={(activeTheme) => ({ ...solidPanelStyles(activeTheme), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Despliegue y Reportes" title="Filtros de Operación Comercial" description="Parámetros para el análisis del desempeño del asistente en ventas y soporte." />
+                    <SectionPanel>
+                        <SectionHeader eyebrow="Despliegue y Reportes" title="Filtros de Operación Comercial" description="Parámetros para el análisis del desempeño del asistente en ventas y soporte." />
 
-                        <Stack sx={{ gap: cssPx(dmr.spacing.lg), mt: cssPx(dmr.spacing.xl) }}>
+                        <Stack sx={{ gap: cssPx(dmr.spacing.lg) }}>
                             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: cssPx(dmr.spacing.md) }}>
                                 <TextField select label="Canal de Interacción" defaultValue="whatsapp" fullWidth>
                                     <MenuItem value="whatsapp">WhatsApp</MenuItem>
@@ -1614,8 +1438,8 @@ export function VisualFoundationsPage() {
 
                         <Divider sx={{ my: cssPx(dmr.spacing.xl), borderColor: dmr.borders.subtle }} />
 
-                        <SectionHeading eyebrow="Design System" title="Sistema de Colores y Estados" />
-                        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(4, minmax(0, 1fr))" }, gap: cssPx(dmr.spacing.sm), mt: cssPx(dmr.spacing.lg) }}>
+                        <SectionHeader eyebrow="Design System" title="Sistema de Colores y Estados" />
+                        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(4, minmax(0, 1fr))" }, gap: cssPx(dmr.spacing.sm) }}>
                             {superficies.slice(0, 4).map(([label, background]) => (
                                 <Box key={label} sx={{ p: cssPx(dmr.spacing.sm), borderRadius: cssPx(dmr.radius.sm), bgcolor: background, border: `1px solid ${dmr.borders.default}` }}>
                                     <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.secondary }}>{label}</Typography>
@@ -1627,11 +1451,18 @@ export function VisualFoundationsPage() {
                                 <Chip key={label} label={label} sx={{ color, bgcolor: backgroundColor, border: `1px solid ${color}` }} />
                             ))}
                         </Stack>
-                    </Box>
+                    </SectionPanel>
 
-                    <Box sx={(activeTheme) => ({ ...glassPanelStyles(activeTheme, activeTheme.dmr.primary.subtle), p: { xs: cssPx(activeTheme.dmr.spacing.lg), md: cssPx(activeTheme.dmr.spacing.xl) } })}>
-                        <SectionHeading eyebrow="Lectura Técnica" title="Precisión Numérica" description="Fuentes monoespaciadas para la lectura correcta de métricas comerciales (CSAT, retención, escalamientos)." />
-                        <Stack sx={{ gap: cssPx(dmr.spacing.lg), mt: cssPx(dmr.spacing.xl) }}>
+                    <SectionPanel
+                        variant="glass"
+                        glassColor={dmr.primary.subtle}
+                        header={{
+                            eyebrow: "Lectura Técnica",
+                            title: "Precisión Numérica",
+                            description: "Fuentes monoespaciadas para la lectura correcta de métricas comerciales (CSAT, retención, escalamientos).",
+                        }}
+                    >
+                        <Stack sx={{ gap: cssPx(dmr.spacing.lg) }}>
                             {magnitudesNumericas.map((magnitude) => (
                                 <Box key={magnitude}>
                                     <Typography sx={{ ...dmr.typography.xs, color: dmr.textos.tertiary }}>{magnitude} (Métricas Comerciales)</Typography>
@@ -1639,7 +1470,7 @@ export function VisualFoundationsPage() {
                                 </Box>
                             ))}
                         </Stack>
-                    </Box>
+                    </SectionPanel>
                 </Box>
 
                 {/* FOOTER */}

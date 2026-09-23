@@ -31,7 +31,8 @@ import { useEffect, useMemo, useState } from "react";
 import { usePanelLateral } from "../../app/panelContext";
 import { obtenerTrazas } from "../../shared/ai-gateway/api";
 import type { TraceLog, TraceStatusHttp } from "../../shared/ai-gateway/types";
-import { cssPx, glassPanelStyles, solidPanelStyles } from "../../shared/styles/superficies";
+import { cssPx } from "../../shared/styles/superficies";
+import { GlassToolbar, SectionPanel } from "../../shared/components/surfaces";
 import type { DmrTheme } from "../../theme/variables-visuales";
 
 /**
@@ -404,13 +405,7 @@ export function ConversacionesPage() {
             </Box>
 
             {/* 2. Barra de filtros vítrea: buscador, canal y estado. */}
-            <Box
-                component="section"
-                sx={(theme) => ({
-                    ...glassPanelStyles(theme, theme.dmr.estados.ai.subtle),
-                    p: cssPx(theme.dmr.density.comfortable.cardPadding),
-                })}
-            >
+            <GlassToolbar glassColor={dmr.estados.ai.subtle}>
                 <Stack
                     direction="row"
                     sx={{ gap: cssPx(dmr.spacing.md), flexWrap: "wrap", alignItems: "center" }}
@@ -487,16 +482,10 @@ export function ConversacionesPage() {
                         {trazasFiltradas.length} de {trazasQuery.data?.length ?? 0} sesiones
                     </Typography>
                 </Stack>
-            </Box>
+            </GlassToolbar>
 
             {/* 3. Tabla del historial de sesiones (panel sólido estandarizado). */}
-            <Box
-                component="section"
-                sx={(theme) => ({
-                    ...solidPanelStyles(theme),
-                    p: cssPx(theme.dmr.density.comfortable.cardPadding),
-                })}
-            >
+            <SectionPanel>
                 {trazasQuery.isPending ? (
                     <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.tertiary }}>
                         Cargando historial de conversaciones…
@@ -619,7 +608,7 @@ export function ConversacionesPage() {
                         </Table>
                     </TableContainer>
                 )}
-            </Box>
+            </SectionPanel>
         </Stack>
     );
 }

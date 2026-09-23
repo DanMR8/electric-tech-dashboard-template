@@ -25,7 +25,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import * as echarts from "echarts";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { usePanelLateral } from "../../app/panelContext";
@@ -44,7 +44,8 @@ import type {
     SystemAlert,
 } from "../../shared/ai-gateway/types";
 import { apiConfig } from "../../shared/config";
-import { cssPx, glassPanelStyles, solidPanelStyles } from "../../shared/styles/superficies";
+import { cssPx, solidPanelStyles } from "../../shared/styles/superficies";
+import { GlassToolbar, SectionHeader, SectionPanel, StatCard } from "../../shared/components/surfaces";
 import { crearTemaEcharts } from "../../theme";
 import type { DmrTheme } from "../../theme/variables-visuales";
 
@@ -82,131 +83,7 @@ function NotaDatosEnVacio({ texto }: { texto: string }) {
     );
 }
 
-/* -------------------------------- Sparkline -------------------------------- */
-
-function MiniSparkline({ points, color }: { points: ReadonlyArray<number>; color: string }) {
-    const dmr = useTheme().dmr;
-    const id = useId().replace(/:/g, "");
-    const min = Math.min(...points);
-    const max = Math.max(...points);
-    const rango = Math.max(max - min, 1);
-
-    const puntosLinea = points
-        .map((valor, indice) => {
-            const x = (indice / (points.length - 1)) * 120;
-            const y = 32 - ((valor - min) / rango) * 26;
-            return `${x},${y}`;
-        })
-        .join(" ");
-
-    return (
-        <svg
-            viewBox="0 0 120 36"
-            role="presentation"
-            aria-hidden="true"
-            style={{
-                display: "block",
-                width: "100%",
-                height: dmr.medidas.decorativos.sparklineAlto,
-            }}
-        >
-            <defs>
-                <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-                    <stop offset="100%" stopColor={color} stopOpacity="0" />
-                </linearGradient>
-            </defs>
-            <polygon points={`0,36 ${puntosLinea} 120,36`} fill={`url(#${id})`} />
-            <polyline
-                points={puntosLinea}
-                fill="none"
-                stroke={color}
-                strokeWidth={dmr.medidas.trazos.sparkline}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </svg>
-    );
-}
-
-/* -------------------------------- Tarjetas KPI -------------------------------- */
-
-function TarjetaMetrica({
-    metrica,
-    color,
-    softAccent,
-}: {
-    metrica: MetricSummary;
-    color: string;
-    softAccent: string;
-}) {
-    const theme = useTheme();
-    const dmr = theme.dmr;
-    // Un aumento puede ser bueno (tokens) o malo (latencia): el color del
-    // delta deriva de metrica.variacionEsPositiva, no del signo.
-    const mejora =
-        metrica.variacion > 0
-            ? metrica.variacionEsPositiva
-            : !metrica.variacionEsPositiva;
-    const colorDelta = mejora
-        ? dmr.estados.success.foreground
-        : dmr.estados.error.foreground;
-    const signo = metrica.variacion > 0 ? "+" : "";
-
-    return (
-        <Card
-            sx={(theme) => ({
-                ...solidPanelStyles(theme),
-                backgroundImage: `radial-gradient(circle at 100% 0%, ${softAccent}, transparent 48%)`,
-                transition: theme.transitions.create(
-                    ["transform", "border-color", "box-shadow"],
-                    {
-                        duration: theme.dmr.motion.duration.fast,
-                        easing: theme.dmr.motion.easing.standard,
-                    },
-                ),
-                "&:hover": {
-                    transform: "translateY(-2px)",
-                    borderColor: color,
-                    boxShadow: `${theme.dmr.elevation.card}, 0 16px 48px ${softAccent}`,
-                },
-            })}
-        >
-            <CardContent sx={{ p: cssPx(dmr.density.comfortable.cardPadding) }}>
-                <Stack sx={{ gap: cssPx(dmr.spacing.sm) }}>
-                    <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary }}>
-                        {metrica.etiqueta}
-                    </Typography>
-
-                    <Stack
-                        direction="row"
-                        sx={{ alignItems: "center", gap: cssPx(dmr.spacing.sm), flexWrap: "wrap" }}
-                    >
-                        <Typography sx={{ ...dmr.typography.numeric.xl, color: dmr.textos.primary }}>
-                            {metrica.valor}
-                        </Typography>
-                        <Chip
-                            size="small"
-                            label={`${signo}${metrica.variacion.toFixed(1)}%`}
-                            sx={{
-                                height: dmr.medidas.microChips.chico,
-                                fontSize: dmr.typography.micro.fontSize,
-                                bgcolor: mejora
-                                    ? dmr.estados.success.subtle
-                                    : dmr.estados.error.subtle,
-                                color: colorDelta,
-                            }}
-                        />
-                    </Stack>
-
-                    <MiniSparkline points={metrica.sparkline} color={color} />
-                </Stack>
-            </CardContent>
-        </Card>
-    );
-}
-
-/* ------------------------- Gráfica principal (ECharts) ------------------------- */
+/* -------------------------------- Gráfica principal (ECharts) -------------------------------- */
 
 function GraficaInteraccionesPorCanal() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -230,6 +107,7 @@ function GraficaInteraccionesPorCanal() {
 
         chart = echarts.init(container, crearTemaEcharts(dmr), {
             renderer: "svg",
+            useDirtyRect: false,
         });
 
         chart.setOption({
@@ -526,15 +404,10 @@ function GridCanalesInteraccion() {
 
     return (
         <Box component="section">
-            <Stack sx={{ gap: cssPx(dmr.spacing.md), maxWidth: 720 }}>
-                <Typography sx={{ ...dmr.typography.lg, fontWeight: 600, color: dmr.textos.primary }}>
-                    Rendimiento por Canal de Asistencia
-                </Typography>
-                <Typography sx={{ ...dmr.typography.sm, color: dmr.textos.secondary }}>
-                    Tasa de resolución, volumen atendido y latencia de cada canal. Son datos
-                    ilustrativos de la operación diaria.
-                </Typography>
-            </Stack>
+            <SectionHeader
+                title="Rendimiento por Canal de Asistencia"
+                description="Tasa de resolución, volumen atendido y latencia de cada canal. Son datos ilustrativos de la operación diaria."
+            />
 
             {canalesQuery.isPending ? (
                 <NotaDatosEnVacio texto="Cargando canales de interacción…" />
@@ -543,7 +416,6 @@ function GridCanalesInteraccion() {
             ) : (
                 <Box
                     sx={{
-                        mt: cssPx(dmr.spacing.lg),
                         display: "grid",
                         gridTemplateColumns: {
                             xs: "1fr",
@@ -672,6 +544,7 @@ function PanelConversacionEnVivo() {
 
         chart = echarts.init(container, crearTemaEcharts(dmr), {
             renderer: "svg",
+            useDirtyRect: false,
         });
 
         const medidores: ReadonlyArray<{ medidor: MedidorEnVivo; color: string }> = [
@@ -958,13 +831,7 @@ export function EcommercePage() {
     return (
         <Stack sx={{ gap: cssPx(dmr.density.comfortable.sectionGap) }}>
             {/* 1. Header vítreo: título amigable + controles visuales rápidos. */}
-            <Box
-                component="header"
-                sx={(theme) => ({
-                    ...glassPanelStyles(theme, theme.dmr.primary.subtle),
-                    p: cssPx(theme.dmr.spacing.lg),
-                })}
-            >
+            <GlassToolbar component="header" glassColor={dmr.primary.subtle}>
                 <Stack
                     direction="row"
                     sx={{
@@ -1028,31 +895,17 @@ export function EcommercePage() {
                         <BotonPanelLateral abierto={abierto} onClick={() => setAbierto(!abierto)} />
                     </Stack>
                 </Stack>
-            </Box>
+            </GlassToolbar>
 
             {/* 2. Gráfica principal: interacciones por canal (apiladas). */}
-            <Box
-                component="section"
-                sx={(theme) => ({
-                    ...solidPanelStyles(theme),
-                    p: cssPx(theme.dmr.density.comfortable.cardPadding),
-                })}
+            <SectionPanel
+                header={{
+                    eyebrow: "Canales",
+                    title: "Interacciones por Canal",
+                }}
             >
-                <Stack sx={{ gap: cssPx(dmr.spacing.lg) }}>
-                    <Box>
-                        <Typography
-                            variant="overline"
-                            sx={{ color: dmr.primary.default, letterSpacing: "0.12em" }}
-                        >
-                            Canales
-                        </Typography>
-                        <Typography sx={{ ...dmr.typography.lg, fontWeight: 600, color: dmr.textos.primary }}>
-                            Interacciones por Canal
-                        </Typography>
-                    </Box>
-                    <GraficaInteraccionesPorCanal />
-                </Stack>
-            </Box>
+                <GraficaInteraccionesPorCanal />
+            </SectionPanel>
 
             {/* 3. Tarjetas de métricas (KPIs) con sparkline. */}
             {metricasQuery.isPending ? (
@@ -1073,11 +926,15 @@ export function EcommercePage() {
                 >
                     {metricasQuery.data
                         .map((metrica: MetricSummary, indice: number) => (
-                            <TarjetaMetrica
+                            <StatCard
                                 key={metrica.etiqueta}
-                                metrica={metrica}
-                                color={coloresMetricas[indice].color}
-                                softAccent={coloresMetricas[indice].softAccent}
+                                label={metrica.etiqueta}
+                                value={metrica.valor}
+                                variationValue={metrica.variacion}
+                                variationIsPositive={metrica.variacionEsPositiva}
+                                accentColor={coloresMetricas[indice].color}
+                                softAccentColor={coloresMetricas[indice].softAccent}
+                                sparklinePoints={metrica.sparkline}
                             />
                         ))}
                 </Box>
