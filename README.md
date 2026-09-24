@@ -2,6 +2,8 @@
 
 A modular web template for enterprise applications and AI-assisted products, presented as a dark, electric-styled dashboard. The reference UI is a fictional e-commerce + AI assistant operations center: KPIs, multi-series charts, conversion funnels, heatmaps, radar profiles, and live conversation analytics, all wired through mocked, type-safe data contracts.
 
+![Dashboard de inicio](assets/Dashboard1.png)
+
 ## Stack
 
 | Layer | Technology |
@@ -40,7 +42,7 @@ For TTS, the design does not depend on a single full audio file. It is built for
 - Segmented TTS
 - Operation cancellation and reconnection
 - WebSocket
-- Future mic / STT / voice-driven conversation
+- Mic / STT / voice-driven conversation
 
 > "Prepared for" is not "already implemented". This template provides the foundation and the extension points; an SSE server, a TTS provider, STT, WebRTC, or LLM models belong to the solution that consumes it.
 
