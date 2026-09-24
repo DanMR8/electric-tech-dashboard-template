@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
     const wsTarget = proxyTarget.replace(/^http/, "ws");
 
     return {
+        base: "/electric-tech-dashboard-template/",
         plugins: [react()],
 
         server: {

@@ -1,5 +1,7 @@
 # VoltDash
 
+🚀 **Live Demo:** [Ver el dashboard en vivo aquí](https://DanMR8.github.io/electric-tech-dashboard-template)
+
 A modular web template for enterprise applications and AI-assisted products, presented as a dark, electric-styled dashboard. The reference UI is a fictional e-commerce + AI assistant operations center: KPIs, multi-series charts, conversion funnels, heatmaps, radar profiles, and live conversation analytics, all wired through mocked, type-safe data contracts.
 
 ![Dashboard de inicio](assets/Dashboard1.png)
